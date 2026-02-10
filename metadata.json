@@ -1,0 +1,5 @@
+{
+  "name": "Nonius TechOps - Deployment Management Platform",
+  "description": "A modern replacement for legacy technical spreadsheets, enabling technicians to manage hotel software deployments (TV, Wi-Fi, Voice) with validated forms, network mapping, and AI-driven configuration audits.",
+  "requestFramePermissions": []
+}
