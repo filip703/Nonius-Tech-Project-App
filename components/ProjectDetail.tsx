@@ -13,7 +13,7 @@ import RackBuilder from './RackBuilder';
 import NetworkSolutions from './NetworkSolutions';
 import SwitchingPlan from './SwitchingPlan';
 import VoiceConfiguration from './VoiceConfiguration';
-import MobileConfiguration from './MobileConfiguration';
+import MobileAppConfig from './MobileAppConfig';
 import BackupManager from './BackupManager';
 import PhotoDocumentation from './PhotoDocumentation';
 import HandoverManager from './HandoverManager';
@@ -188,7 +188,7 @@ const ProjectDetail: React.FC<{ role: UserRole }> = ({ role }) => {
           {activeTab === ModuleType.VLAN && <NetworkSolutions project={project} onUpdate={(networkSolutions) => handleSave({ networkSolutions })} role={role} />}
           {activeTab === ModuleType.SWITCHING && <SwitchingPlan project={project} onUpdate={(switchingPlan) => handleSave({ switchingPlan })} role={role} />}
           {activeTab === ModuleType.VOICE && <VoiceConfiguration project={project} onUpdate={(voiceConfig) => handleSave({ voiceConfig })} role={role} />}
-          {activeTab === ModuleType.MOBILE && <MobileConfiguration role={role} />}
+          {activeTab === ModuleType.MOBILE && <MobileAppConfig project={project} onUpdate={(mobileConfig) => handleSave({ mobileConfig })} role={role} />}
           {activeTab === ModuleType.WEBAPP && <div className="p-20 text-center"><Globe size={64} className="mx-auto text-slate-200 mb-4" /><p className="font-bold text-slate-400 uppercase tracking-widest">Webapp Configuration Coming Soon</p></div>}
           {activeTab === ModuleType.PHOTOS && <PhotoDocumentation role={role} />}
           {activeTab === ModuleType.HANDOVER && <HandoverManager project={project} role={role} />}
