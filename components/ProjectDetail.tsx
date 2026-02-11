@@ -48,19 +48,7 @@ const ProjectDetail: React.FC<{ role: UserRole }> = ({ role }) => {
     </div>
   );
 
-  const availableModules = [
-    ...project.selectedModules,
-    ModuleType.VOICE,
-    ModuleType.MOBILE,
-    ModuleType.VLAN,
-    ModuleType.SWITCHING,
-    ModuleType.RACK,
-    ModuleType.BACKUPS,
-    ModuleType.PHOTOS,
-    ModuleType.LABELS,
-    ModuleType.RMA,
-    ModuleType.HANDOVER
-  ];
+  const availableModules = project.selectedModules || [];
 
   const tabs = ['Overview', ...availableModules, 'Network Topology', 'Documents'];
 
@@ -201,7 +189,7 @@ const ProjectDetail: React.FC<{ role: UserRole }> = ({ role }) => {
           {activeTab === ModuleType.SWITCHING && <SwitchingPlan project={project} onUpdate={(switchingPlan) => handleSave({ switchingPlan })} role={role} />}
           {activeTab === ModuleType.VOICE && <VoiceConfiguration project={project} onUpdate={(voiceConfig) => handleSave({ voiceConfig })} role={role} />}
           {activeTab === ModuleType.MOBILE && <MobileConfiguration role={role} />}
-          {activeTab === ModuleType.BACKUPS && <BackupManager role={role} />}
+          {activeTab === ModuleType.WEBAPP && <div className="p-20 text-center"><Globe size={64} className="mx-auto text-slate-200 mb-4" /><p className="font-bold text-slate-400 uppercase tracking-widest">Webapp Configuration Coming Soon</p></div>}
           {activeTab === ModuleType.PHOTOS && <PhotoDocumentation role={role} />}
           {activeTab === ModuleType.HANDOVER && <HandoverManager project={project} role={role} />}
           

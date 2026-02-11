@@ -34,20 +34,26 @@ export interface ProjectContact {
 }
 
 export enum ModuleType {
-  TV = 'TV System',
-  CAST = 'CAST',
+  // Selectable Solutions
+  TV = 'NTV+',
+  CAST = 'Nonius Cast',
   SIGNAGE = 'Digital Signage',
   VOICE = 'Voice/VoIP',
   MOBILE = 'Mobile App',
-  INTERNET = 'Internet Access/Gateway',
+  WEBAPP = 'Webapp',
+  INTERNET = 'Internet Access',
+  NETWORK = 'Nonius Network', // Parent for Rack, VLAN, Switch
+  
+  // Network Sub-modules (Enabled via Network)
   RACK = 'Rack Layout',
   VLAN = 'VLAN & Services',
   SWITCHING = 'Switching Plan',
-  BACKUPS = 'Backup Manager',
+
+  // Mandatory Management Tools (Always present)
   PHOTOS = 'Site Photos',
-  HANDOVER = 'Final Handover',
   LABELS = 'Label Generator',
-  RMA = 'RMA / Defect Manager'
+  RMA = 'RMA / Defect Manager',
+  HANDOVER = 'Final Handover'
 }
 
 export enum RmaStatus {
@@ -75,7 +81,7 @@ export interface SiteActivity {
   timestamp: string;
   isError: boolean;
   module?: ModuleType;
-  isPublic?: boolean; // For client visibility
+  isPublic?: boolean; 
 }
 
 export enum DocumentCategory {
@@ -97,8 +103,8 @@ export interface Device {
   room: string;
   ipAddress: string;
   installed: boolean;
-  installedBy?: string; // Accountability Tracking
-  installedAt?: string; // Accountability Tracking
+  installedBy?: string;
+  installedAt?: string;
 }
 
 export interface ProjectDocument {
@@ -121,7 +127,6 @@ export interface NetworkInterface {
   notes: string;
 }
 
-// TV Module Types
 export interface TvChannel {
   id: string;
   name: string;
@@ -197,7 +202,6 @@ export interface TvModuleConfig {
   ottStreams: TvOttStream[];
 }
 
-// Cast Module Types
 export interface PhysicalPort {
   id: string;
   label: string;
@@ -308,7 +312,6 @@ export interface CastModuleConfig {
   };
 }
 
-// WiFi Module Types
 export interface WifiController {
   mode: 'Central' | 'Manual';
   brand: string;
@@ -374,7 +377,6 @@ export interface WifiModuleConfig {
   inventory: AccessPoint[];
 }
 
-// Rack Module Types
 export interface RackDevice {
   id: string;
   uPosition: number;
@@ -391,7 +393,6 @@ export interface Rack {
   devices: RackDevice[];
 }
 
-// Network Solutions Types
 export interface ServiceAudit {
   name: string;
   description: string;
@@ -413,7 +414,6 @@ export interface VlanConfig {
   description: string;
 }
 
-// Switching Plan Types
 export interface SwitchEntry {
   id: string;
   location: string;

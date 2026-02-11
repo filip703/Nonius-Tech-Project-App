@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 /* Updated icon names for lucide-react compatibility */
-import { LayoutDashboard, Network, Users, Search, Bell, Menu, X, Activity, HardDrive, CircleCheck, Tv, Share2, Mic, Phone, Wifi, MonitorPlay, ChevronDown, CircleUser, Save, FolderOpen, Plus, Check, RefreshCw, Server, ShieldCheck, Camera, FileCheck, Tag, PackageX, ExternalLink, UserCog, Building2 } from 'lucide-react';
+import { LayoutDashboard, Network, Users, Search, Bell, Menu, X, Activity, HardDrive, CircleCheck, Tv, Share2, Mic, Phone, Wifi, MonitorPlay, ChevronDown, CircleUser, Save, FolderOpen, Plus, Check, RefreshCw, Server, ShieldCheck, Camera, FileCheck, Tag, PackageX, ExternalLink, UserCog, Building2, Smartphone, Globe } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import ProjectDetail from './components/ProjectDetail';
 import ProjectHub from './components/ProjectHub';
@@ -15,11 +15,6 @@ import { ProjectProvider, useProjects } from './contexts/ProjectContext';
 import { UserRole, Project, ModuleType, SiteActivity, Technician } from './types';
 
 export const NoniusLogo = ({ className = "w-10 h-10" }: { className?: string }) => {
-  // Pattern from image: 
-  // Row 1: B G G B
-  // Row 2: B B G B
-  // Row 3: B G B B
-  // Row 4: B G G B
   const dots = [
     'bg-[#171844]', 'bg-[#87A237]', 'bg-[#87A237]', 'bg-[#171844]',
     'bg-[#171844]', 'bg-[#171844]', 'bg-[#87A237]', 'bg-[#171844]',
@@ -41,12 +36,12 @@ const MODULE_ICONS = {
   [ModuleType.CAST]: Share2,
   [ModuleType.SIGNAGE]: MonitorPlay,
   [ModuleType.VOICE]: Phone,
-  [ModuleType.MOBILE]: Mic,
+  [ModuleType.MOBILE]: Smartphone,
+  [ModuleType.WEBAPP]: Globe,
   [ModuleType.INTERNET]: Wifi,
   [ModuleType.RACK]: Server,
   [ModuleType.VLAN]: ShieldCheck,
   [ModuleType.SWITCHING]: Network,
-  [ModuleType.BACKUPS]: HardDrive,
   [ModuleType.PHOTOS]: Camera,
   [ModuleType.HANDOVER]: FileCheck,
   [ModuleType.LABELS]: Tag,
@@ -54,9 +49,18 @@ const MODULE_ICONS = {
 };
 
 const Sidebar = ({ isOpen, setOpen }: { isOpen: boolean, setOpen: (v: boolean) => void }) => {
-  const { activeProject, setActiveProject, role, currentUser, fieldTechs, setCurrentUser } = useProjects();
+  const { activeProject, setActiveProject, currentUser, fieldTechs, setCurrentUser } = useProjects();
   const location = useLocation();
   const [showTechSelector, setShowTechSelector] = useState(false);
+
+  // Group modules
+  const selectableSolutions = activeProject?.selectedModules.filter(m => 
+    [ModuleType.TV, ModuleType.CAST, ModuleType.SIGNAGE, ModuleType.VOICE, ModuleType.MOBILE, ModuleType.WEBAPP, ModuleType.INTERNET, ModuleType.RACK, ModuleType.VLAN, ModuleType.SWITCHING].includes(m)
+  ) || [];
+
+  const coreManagement = activeProject?.selectedModules.filter(m => 
+    [ModuleType.PHOTOS, ModuleType.LABELS, ModuleType.RMA, ModuleType.HANDOVER].includes(m)
+  ) || [];
   
   return (
     <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#171844] text-white transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0 shadow-2xl flex flex-col`}>
@@ -81,7 +85,7 @@ const Sidebar = ({ isOpen, setOpen }: { isOpen: boolean, setOpen: (v: boolean) =
             <span className="font-bold text-[11px] tracking-[0.1em]">PROJECT HUB</span>
           </Link>
           {activeProject && (
-            <Link to={`/project/${activeProject.id}`} onClick={() => setOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${location.pathname.includes(`/project/${activeProject.id}`) ? 'bg-[#0070C0] text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'}`}>
+            <Link to={`/project/${activeProject.id}`} onClick={() => setOpen(false)} className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${location.pathname.includes(`/project/${activeProject.id}`) && !location.search.includes('tab') ? 'bg-[#0070C0] text-white shadow-lg' : 'text-slate-400 hover:bg-white/5'}`}>
               <LayoutDashboard size={18} />
               <span className="font-bold text-[11px] tracking-[0.1em]">SITE MONITOR</span>
             </Link>
@@ -90,19 +94,38 @@ const Sidebar = ({ isOpen, setOpen }: { isOpen: boolean, setOpen: (v: boolean) =
 
         {activeProject && (
           <div className="space-y-6 animate-in fade-in">
+            {/* TECHNICAL SOLUTIONS */}
+            {selectableSolutions.length > 0 && (
+              <div className="space-y-2">
+                <p className="px-5 mb-2 text-[10px] font-bold text-slate-500 tracking-[0.2em] uppercase">Nonius Solutions</p>
+                {selectableSolutions.map((moduleType) => {
+                  const Icon = MODULE_ICONS[moduleType as keyof typeof MODULE_ICONS];
+                  const isActive = new URLSearchParams(location.search).get('tab') === moduleType;
+                  return (
+                    <Link key={moduleType} to={`/project/${activeProject.id}?tab=${moduleType}`} onClick={() => setOpen(false)} className={`flex items-center gap-4 px-5 py-2.5 rounded-2xl transition-all ${isActive ? 'bg-[#87A237] text-white' : 'text-slate-400 hover:bg-white/5'}`}>
+                      {Icon && <Icon size={18} />}
+                      <span className="font-bold text-[11px] tracking-[0.1em] uppercase truncate">{moduleType}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* CORE MANAGEMENT TOOLS */}
             <div className="space-y-2">
-              <p className="px-5 mb-2 text-[10px] font-bold text-slate-500 tracking-[0.2em] uppercase">Active Solutions</p>
-              {activeProject.selectedModules.map((moduleType) => {
+              <p className="px-5 mb-2 text-[10px] font-bold text-slate-500 tracking-[0.2em] uppercase">Core Administration</p>
+              {coreManagement.map((moduleType) => {
                 const Icon = MODULE_ICONS[moduleType as keyof typeof MODULE_ICONS];
                 const isActive = new URLSearchParams(location.search).get('tab') === moduleType;
                 return (
-                  <Link key={moduleType} to={`/project/${activeProject.id}?tab=${moduleType}`} onClick={() => setOpen(false)} className={`flex items-center gap-4 px-5 py-2.5 rounded-2xl transition-all ${isActive ? 'bg-[#87A237] text-white' : 'text-slate-400 hover:bg-white/5'}`}>
+                  <Link key={moduleType} to={`/project/${activeProject.id}?tab=${moduleType}`} onClick={() => setOpen(false)} className={`flex items-center gap-4 px-5 py-2.5 rounded-2xl transition-all ${isActive ? 'bg-[#0070C0] text-white' : 'text-slate-400 hover:bg-white/5'}`}>
                     {Icon && <Icon size={18} />}
                     <span className="font-bold text-[11px] tracking-[0.1em] uppercase truncate">{moduleType}</span>
                   </Link>
                 );
               })}
             </div>
+
             <div className="pt-6 border-t border-white/10">
                <Link to={`/client/${activeProject.id}`} className="flex items-center gap-4 px-5 py-4 bg-white/5 rounded-2xl text-slate-400 hover:text-white transition-all border border-white/5">
                  <ExternalLink size={18} className="text-[#87A237]" />
@@ -205,7 +228,7 @@ const Header = ({ setOpen, onActivityToggle }: { setOpen: (v: boolean) => void, 
 const AppContent = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
-  const { activeProject, role, isWizardOpen, createNewProject, setIsWizardOpen } = useProjects();
+  const { role, isWizardOpen, createNewProject, setIsWizardOpen } = useProjects();
   const navigate = useNavigate();
 
   const handleSetupComplete = (project: Project) => { createNewProject(project); navigate(`/project/${project.id}`); };

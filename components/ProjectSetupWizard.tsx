@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   Hotel, MapPin, Hash, User, ChevronRight, Check, Tv, Share2, 
   Phone, Wifi, MonitorPlay, Server, ShieldCheck, Network, 
-  Mail, Users, UserPlus, Trash2, Briefcase, Wrench, ShieldAlert, Building2
+  Mail, Users, UserPlus, Trash2, Briefcase, Wrench, ShieldAlert, Building2, Globe, Smartphone
 } from 'lucide-react';
 import { ModuleType, Project, ProjectContact } from '../types';
 import { NoniusLogo } from '../App';
@@ -13,14 +13,16 @@ interface ProjectSetupWizardProps {
   onCancel: () => void;
 }
 
-const MODULE_ICONS = {
-  [ModuleType.TV]: Tv,
-  [ModuleType.CAST]: Share2,
-  [ModuleType.VOICE]: Phone,
-  [ModuleType.MOBILE]: Phone,
-  [ModuleType.INTERNET]: Wifi,
-  [ModuleType.SWITCHING]: Network,
-};
+const SELECTABLE_SOLUTIONS = [
+  { type: ModuleType.TV, icon: Tv, label: 'NTV+', desc: 'Next-gen IPTV & Headend system' },
+  { type: ModuleType.CAST, icon: Share2, label: 'Nonius Cast', desc: 'Seamless mobile-to-TV streaming' },
+  { type: ModuleType.SIGNAGE, icon: MonitorPlay, label: 'Digital Signage', desc: 'Hotel-wide communication screens' },
+  { type: ModuleType.VOICE, icon: Phone, label: 'Voice/VoIP', desc: 'Unified telephony & Guest services' },
+  { type: ModuleType.MOBILE, icon: Smartphone, label: 'Mobile App', desc: 'Native iOS/Android guest portal' },
+  { type: ModuleType.WEBAPP, icon: Globe, label: 'Webapp', desc: 'Zero-install guest browser app' },
+  { type: ModuleType.INTERNET, icon: Wifi, label: 'Internet Access', desc: 'Guest WiFi & Bandwidth management' },
+  { type: ModuleType.NETWORK, icon: Network, label: 'Nonius Network', desc: 'Includes Rack, VLANs & Switch Plan' },
+];
 
 const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onCancel }) => {
   const [step, setStep] = useState(1);
@@ -48,7 +50,7 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
   });
 
   // State for Step 3
-  const [selectedModules, setSelectedModules] = useState<ModuleType[]>([]);
+  const [selectedSolutionTypes, setSelectedSolutionTypes] = useState<ModuleType[]>([]);
 
   const handleAddInstaller = () => setInstallers([...installers, '']);
   const handleRemoveInstaller = (index: number) => setInstallers(installers.filter((_, i) => i !== index));
@@ -58,9 +60,9 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
     setInstallers(next);
   };
 
-  const toggleModule = (module: ModuleType) => {
-    setSelectedModules(prev => 
-      prev.includes(module) ? prev.filter(m => m !== module) : [...prev, module]
+  const toggleSolution = (type: ModuleType) => {
+    setSelectedSolutionTypes(prev => 
+      prev.includes(type) ? prev.filter(m => m !== type) : [...prev, type]
     );
   };
 
@@ -79,6 +81,20 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
       contacts.push({ id: `inst-${i}`, name, email: '', mobile: '', role: 'Third-Party', jobDescription: 'Installer' });
     });
 
+    // Final mapping of selected solutions to actual modules
+    const finalModules: ModuleType[] = [];
+    
+    selectedSolutionTypes.forEach(sol => {
+      if (sol === ModuleType.NETWORK) {
+        finalModules.push(ModuleType.RACK, ModuleType.VLAN, ModuleType.SWITCHING);
+      } else {
+        finalModules.push(sol);
+      }
+    });
+
+    // Always add core management tools
+    finalModules.push(ModuleType.PHOTOS, ModuleType.LABELS, ModuleType.RMA, ModuleType.HANDOVER);
+
     const newProject: Project = {
       id: `proj-${Date.now()}`,
       name: siteData.name,
@@ -91,7 +107,7 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
       rooms: siteData.rooms,
       category: 'Standard',
       updatedAt: new Date().toISOString(),
-      selectedModules,
+      selectedModules: finalModules,
       clientInfo: {
         socialDesignation: siteData.name,
         address: siteData.address,
@@ -106,7 +122,7 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
   const steps = [
     { id: 1, label: 'SITE & TEAM', desc: 'Define location & personnel' },
     { id: 2, label: 'CLIENT CONTACTS', desc: 'Key hotel stakeholders' },
-    { id: 3, label: 'SOLUTION SCOPE', desc: 'Selected products' },
+    { id: 3, label: 'NONIUS SOLUTIONS', desc: 'Selected products' },
   ];
 
   return (
@@ -155,7 +171,7 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
              <div className="p-6 bg-white/5 rounded-3xl border border-white/5 flex items-center gap-4">
                 <ShieldAlert className="text-[#87A237] shrink-0" size={20} />
                 <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
-                  Ensure all Site IDs match the Sales Contract to enable cloud synchronization.
+                  Site management core modules (Photos, RMA, Labels, Handover) are auto-enabled.
                 </p>
              </div>
           </div>
@@ -321,18 +337,18 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
             {step === 3 && (
               <div className="max-w-4xl mx-auto space-y-12 animate-in slide-in-from-right-8 duration-500">
                 <div className="text-center space-y-2">
-                   <h2 className="text-3xl font-black text-[#171844]">Solution Architecture</h2>
-                   <p className="text-slate-500 font-medium italic">Select the modules included in this deployment scope.</p>
+                   <h2 className="text-3xl font-black text-[#171844]">Select Nonius Solutions</h2>
+                   <p className="text-slate-500 font-medium italic">Configure the technical ecosystem for this property.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Object.values(ModuleType).map((module) => {
-                    const Icon = MODULE_ICONS[module as keyof typeof MODULE_ICONS] || Server;
-                    const isSelected = selectedModules.includes(module);
+                  {SELECTABLE_SOLUTIONS.map((sol) => {
+                    const Icon = sol.icon;
+                    const isSelected = selectedSolutionTypes.includes(sol.type);
                     return (
                       <button
-                        key={module}
-                        onClick={() => toggleModule(module)}
+                        key={sol.type}
+                        onClick={() => toggleSolution(sol.type)}
                         className={`group p-8 rounded-[2.5rem] border-2 text-left transition-all duration-300 relative overflow-hidden ${
                           isSelected 
                             ? 'bg-[#171844] border-[#171844] shadow-2xl scale-[1.02]' 
@@ -346,10 +362,10 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
                         </div>
                         
                         <p className={`font-black text-lg ${isSelected ? 'text-white' : 'text-[#171844]'}`}>
-                           {module}
+                           {sol.label}
                         </p>
-                        <p className={`text-xs mt-2 font-medium ${isSelected ? 'text-slate-400' : 'text-slate-400'}`}>
-                           Activate provisioning workspace and technical forms for {module}.
+                        <p className={`text-[10px] mt-2 font-medium ${isSelected ? 'text-slate-400' : 'text-slate-400'}`}>
+                           {sol.desc}
                         </p>
 
                         <div className={`absolute top-6 right-6 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
