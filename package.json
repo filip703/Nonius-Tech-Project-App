@@ -1,27 +1,38 @@
 {
-  "name": "nonius-techops---deployment-management-platform",
+  "name": "nonius-deployment-platform",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "lint": "eslint .",
     "preview": "vite preview"
   },
-"dependencies": {
-  "react": "^18.2.0",
-  "react-dom": "^18.2.0",
-  "react-router-dom": "^6.22.0",
-  "lucide-react": "^0.344.0",
-  "react-beautiful-dnd": "^13.1.1",
-  "react-flow-renderer": "^10.3.17",
-  "tailwindcss": "^3.4.1"
-}
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.22.3",
+    "lucide-react": "^0.344.0",
+    "react-beautiful-dnd": "^13.1.1",
+    "reactflow": "^11.10.4",
+    "recharts": "^2.12.2",
+    "tailwindcss": "^3.4.1",
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.2.1",
+    "@google/genai": "^0.1.0",
+    "dagre": "^0.8.5"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.18",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "postcss": "^8.4.35",
+    "vite": "^5.1.6"
   }
 }
