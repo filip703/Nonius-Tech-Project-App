@@ -78,28 +78,28 @@ const SwitchingPlan: React.FC<SwitchingPlanProps> = ({ project, onUpdate, role }
         />
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
          <div>
             <h2 className="text-2xl font-bold text-[#171844]">Switching Infrastructure Plan</h2>
             <p className="text-sm text-slate-500 font-medium">Physical hardware inventory and L2 management addressing</p>
          </div>
-         <div className="flex gap-4">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">
-               <CloudDownload size={16} /> Bulk CSV Import
+         <div className="flex gap-4 w-full md:w-auto">
+            <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all">
+               <CloudDownload size={16} /> <span className="hidden lg:inline">Bulk Import</span>
             </button>
             {!isViewOnly && (
               <button 
                 onClick={addRow}
-                className="flex items-center gap-2 px-6 py-2 bg-[#0070C0] text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-100"
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-[#0070C0] text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-100"
               >
-                <Plus size={18} /> Provision Switch
+                <Plus size={18} /> Add Switch
               </button>
             )}
          </div>
       </div>
 
       <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden relative">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-hide">
           <table className="w-full text-left text-[11px] table-fixed min-w-[2100px]">
             <thead className="bg-[#171844] text-white">
               <tr className="font-black uppercase tracking-[0.1em]">

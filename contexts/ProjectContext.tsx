@@ -52,15 +52,20 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [projects]);
 
   const createNewProject = (project: Project) => {
-    setProjects(prev => [...prev, project]);
-    setActiveProject(project);
+    const initializedProject = { ...project, isLocked: false };
+    setProjects(prev => [...prev, initializedProject]);
+    setActiveProject(initializedProject);
     setIsWizardOpen(false);
   };
 
   const saveProject = (updated: Project) => {
-    setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
+    // If handover is being signed for the first time, auto-lock
+    const shouldLock = updated.handoverSignedAt && updated.isLocked === undefined;
+    const finalUpdate = shouldLock ? { ...updated, isLocked: true } : updated;
+
+    setProjects(prev => prev.map(p => p.id === updated.id ? finalUpdate : p));
     if (activeProject?.id === updated.id) {
-      setActiveProject(updated);
+      setActiveProject(finalUpdate);
     }
   };
 

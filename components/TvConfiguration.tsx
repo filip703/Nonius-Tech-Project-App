@@ -44,9 +44,11 @@ const TvConfiguration: React.FC<TvConfigurationProps> = ({ project, onUpdate, ro
     if (isViewOnly) return;
     const newConfig = { ...config };
     if (field in newConfig.infrastructure.network) {
-      newConfig.infrastructure.network = { ...newConfig.infrastructure.network, [field]: value };
+      // Fix: Cast field to any for dynamic indexing into infrastructure sub-objects
+      (newConfig.infrastructure.network as any)[field] = value;
     } else {
-      newConfig.infrastructure = { ...newConfig.infrastructure, [field]: value };
+      // Fix: Cast field to any for dynamic indexing into infrastructure sub-objects
+      (newConfig.infrastructure as any)[field] = value;
     }
     onUpdate(newConfig);
   };
@@ -160,14 +162,15 @@ const TvConfiguration: React.FC<TvConfigurationProps> = ({ project, onUpdate, ro
               Management Network (eth0)
             </h3>
             <div className="grid grid-cols-2 gap-4">
+              {/* Fix: Added explicit casting of keys to string to prevent type errors in loop */}
               {(Object.keys(config.infrastructure.network) as Array<keyof typeof config.infrastructure.network>).map(key => (
-                <div key={key} className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{key}</label>
+                <div key={key as string} className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{key as string}</label>
                   <input 
                     disabled={isViewOnly}
                     className={`w-full px-4 py-2.5 bg-slate-50 border ${key !== 'vlan' && config.infrastructure.network[key] && !validateIp(config.infrastructure.network[key]) ? 'border-red-500' : 'border-slate-200'} rounded-xl outline-none font-mono text-xs`}
                     value={config.infrastructure.network[key]}
-                    onChange={e => handleInfraChange(key, e.target.value)}
+                    onChange={e => handleInfraChange(key as string, e.target.value)}
                     placeholder="0.0.0.0"
                   />
                 </div>

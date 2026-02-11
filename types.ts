@@ -1,4 +1,5 @@
 
+
 export enum DeploymentStatus {
   NOT_CONTRACTED = 'Not Contracted',
   PENDING = 'Pending Kickoff',
@@ -15,6 +16,24 @@ export enum UserRole {
   ADMIN = 'Admin',
   PROJECT_MANAGER = 'Project Manager',
   CLIENT = 'Client'
+}
+
+// Added missing DocumentCategory enum
+export enum DocumentCategory {
+  NETWORK_DIAGRAM = 'Network Diagram',
+  SITE_PHOTO = 'Site Photo',
+  QA_CHECKLIST = 'QA Checklist',
+  CONTRACT = 'Contract',
+  TECHNICAL_SPEC = 'Technical Spec',
+  OTHER = 'Other'
+}
+
+// Added missing RmaStatus enum
+export enum RmaStatus {
+  REPORTED = 'Reported',
+  APPROVED = 'Approved',
+  SHIPPED = 'Shipped',
+  CLOSED = 'Closed'
 }
 
 export interface Technician {
@@ -42,71 +61,21 @@ export enum ModuleType {
   MOBILE = 'Mobile App',
   WEBAPP = 'Webapp',
   INTERNET = 'Internet Access',
-  NETWORK = 'Nonius Network', // Parent for Rack, VLAN, Switch
+  NETWORK = 'Nonius Network', 
   
-  // Network Sub-modules (Enabled via Network)
+  // Network Sub-modules
   RACK = 'Rack Layout',
   VLAN = 'VLAN & Services',
   SWITCHING = 'Switching Plan',
 
-  // Mandatory Management Tools (Always present)
+  // Mandatory Management Tools
   PHOTOS = 'Site Photos',
   LABELS = 'Label Generator',
   RMA = 'RMA / Defect Manager',
   HANDOVER = 'Final Handover'
 }
 
-export enum RmaStatus {
-  REPORTED = 'Reported',
-  APPROVED = 'Approved',
-  SHIPPED = 'Shipped',
-  CLOSED = 'Closed'
-}
-
-export interface RmaTicket {
-  id: string;
-  sn: string;
-  deviceType: string;
-  issueType: 'Screen Broken' | 'No Power' | 'Software Fail' | 'Cosmetic';
-  status: RmaStatus;
-  date: string;
-  tech: string;
-  photo?: string;
-}
-
-export interface SiteActivity {
-  id: string;
-  user: string;
-  action: string;
-  timestamp: string;
-  isError: boolean;
-  module?: ModuleType;
-  isPublic?: boolean; 
-}
-
-export enum DocumentCategory {
-  NETWORK_DIAGRAM = 'Network Diagram',
-  SITE_PHOTO = 'Site Photo',
-  QA_CHECKLIST = 'QA Checklist',
-  CONTRACT = 'Contract',
-  TECHNICAL_SPEC = 'Technical Spec',
-  OTHER = 'Other'
-}
-
-export interface Device {
-  id: string;
-  name: string;
-  brand: string;
-  model: string;
-  macAddress: string;
-  serialNumber: string;
-  room: string;
-  ipAddress: string;
-  installed: boolean;
-  installedBy?: string;
-  installedAt?: string;
-}
-
+// Added missing ProjectDocument interface
 export interface ProjectDocument {
   id: string;
   name: string;
@@ -116,9 +85,25 @@ export interface ProjectDocument {
   uploadDate: string;
   uploadedBy: string;
   storageUrl: string;
-  moduleId?: ModuleType;
+  moduleId?: string;
 }
 
+// Added missing Device interface
+export interface Device {
+  id: string;
+  name: string;
+  brand: string;
+  model: string;
+  macAddress: string;
+  ipAddress: string;
+  serialNumber: string;
+  room: string;
+  installed: boolean;
+  installedBy?: string;
+  installedAt?: string;
+}
+
+// Added missing NetworkInterface interface
 export interface NetworkInterface {
   ip: string;
   mask: string;
@@ -127,6 +112,7 @@ export interface NetworkInterface {
   notes: string;
 }
 
+// Added missing TvChannel interface
 export interface TvChannel {
   id: string;
   name: string;
@@ -135,11 +121,12 @@ export interface TvChannel {
   scrambled: boolean;
 }
 
+// Added missing TvTuner interface
 export interface TvTuner {
   id: string;
   source: string;
   frequency: string;
-  polarity: string;
+  polarity: 'H' | 'V' | 'L' | 'R';
   symbolRate: string;
   diseqc: string;
   camSlot: string;
@@ -147,6 +134,7 @@ export interface TvTuner {
   channels: TvChannel[];
 }
 
+// Added missing TvStreamer interface
 export interface TvStreamer {
   id: string;
   type: string;
@@ -162,6 +150,7 @@ export interface TvStreamer {
   tuners: TvTuner[];
 }
 
+// Added missing TvOttStream interface
 export interface TvOttStream {
   id: string;
   name: string;
@@ -172,6 +161,7 @@ export interface TvOttStream {
   notes: string;
 }
 
+// Added missing TvModuleConfig interface
 export interface TvModuleConfig {
   infrastructure: {
     serverMain: string;
@@ -202,6 +192,7 @@ export interface TvModuleConfig {
   ottStreams: TvOttStream[];
 }
 
+// Added missing PhysicalPort interface
 export interface PhysicalPort {
   id: string;
   label: string;
@@ -215,6 +206,7 @@ export interface PhysicalPort {
   notes: string;
 }
 
+// Added missing VlanInterface interface
 export interface VlanInterface {
   id: string;
   phyPort: string;
@@ -225,6 +217,7 @@ export interface VlanInterface {
   dhcpRange: string;
 }
 
+// Added missing StaticRoute interface
 export interface StaticRoute {
   id: string;
   name: string;
@@ -234,6 +227,7 @@ export interface StaticRoute {
   notes: string;
 }
 
+// Added missing PortForward interface
 export interface PortForward {
   id: string;
   iface: string;
@@ -245,6 +239,7 @@ export interface PortForward {
   notes: string;
 }
 
+// Added missing DongleStock interface
 export interface DongleStock {
   homatics4k: number;
   homaticsSpares: number;
@@ -254,6 +249,7 @@ export interface DongleStock {
   coverBoxes: number;
 }
 
+// Added missing DongleGlobalConfig interface
 export interface DongleGlobalConfig {
   ssid: string;
   security: string;
@@ -263,6 +259,7 @@ export interface DongleGlobalConfig {
   timeFormat: string;
 }
 
+// Added missing DongleRoomRow interface
 export interface DongleRoomRow {
   id: string;
   room: string;
@@ -277,6 +274,7 @@ export interface DongleRoomRow {
   language?: string;
 }
 
+// Added missing CastModuleConfig interface
 export interface CastModuleConfig {
   system: {
     machineType: 'Physical Unit' | 'Cloud Instance';
@@ -312,6 +310,7 @@ export interface CastModuleConfig {
   };
 }
 
+// Added missing WifiController interface
 export interface WifiController {
   mode: 'Central' | 'Manual';
   brand: string;
@@ -334,26 +333,30 @@ export interface WifiController {
   };
 }
 
+// Added missing WifiZone interface
 export interface WifiZone {
   id: string;
   name: string;
   description: string;
 }
 
+// Added missing WifiApGroup interface
 export interface WifiApGroup {
   id: string;
   name: string;
   zoneId: string;
 }
 
+// Added missing WifiSsid interface
 export interface WifiSsid {
   id: string;
   name: string;
   encryption: 'WPA2' | 'WPA3' | 'Open';
-  password: string;
+  password?: string;
   description: string;
 }
 
+// Added missing AccessPoint interface
 export interface AccessPoint {
   id: string;
   name: string;
@@ -369,6 +372,7 @@ export interface AccessPoint {
   pass: string;
 }
 
+// Added missing WifiModuleConfig interface
 export interface WifiModuleConfig {
   controller: WifiController;
   zones: WifiZone[];
@@ -377,6 +381,7 @@ export interface WifiModuleConfig {
   inventory: AccessPoint[];
 }
 
+// Added missing RackDevice interface
 export interface RackDevice {
   id: string;
   uPosition: number;
@@ -386,6 +391,7 @@ export interface RackDevice {
   isNonius: boolean;
 }
 
+// Added missing Rack interface
 export interface Rack {
   id: string;
   name: string;
@@ -393,6 +399,7 @@ export interface Rack {
   devices: RackDevice[];
 }
 
+// Added missing ServiceAudit interface
 export interface ServiceAudit {
   name: string;
   description: string;
@@ -401,19 +408,21 @@ export interface ServiceAudit {
   comment: string;
 }
 
+// Added missing VlanConfig interface
 export interface VlanConfig {
   id: string;
   vlanId: string;
   name: string;
   network: string;
   gateway: string;
-  physGateway: 'Core Switch' | 'Firewall' | 'Other' | string;
+  physGateway: 'Core Switch' | 'Firewall' | 'Other';
   dhcp: boolean;
   internet: boolean;
   layer7: string;
   description: string;
 }
 
+// Added missing SwitchEntry interface
 export interface SwitchEntry {
   id: string;
   location: string;
@@ -429,6 +438,27 @@ export interface SwitchEntry {
   serialNumber: string;
   firmware: string;
   backupStatus: 'Pending' | 'Success' | 'Failed' | 'N/A';
+}
+
+// Added missing RmaTicket interface
+export interface RmaTicket {
+  id: string;
+  sn: string;
+  deviceType: string;
+  issueType: string;
+  status: RmaStatus;
+  date: string;
+  tech: string;
+}
+
+// Added missing SiteActivity interface
+export interface SiteActivity {
+  id: string;
+  user: string;
+  action: string;
+  timestamp: string;
+  module?: ModuleType;
+  isError?: boolean;
 }
 
 export interface Project {
@@ -461,4 +491,11 @@ export interface Project {
   documents: ProjectDocument[];
   handoverSignedAt?: string;
   handoverSignedBy?: string;
+  isLocked?: boolean; // Security state
+}
+
+export interface AuthUser {
+  name: string;
+  email: string;
+  role: UserRole;
 }
