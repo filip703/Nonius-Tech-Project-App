@@ -68,7 +68,7 @@ const Login: React.FC = () => {
                     className="w-full py-4 bg-[#E9F2F8] text-[#171844] rounded-[2rem] text-xs font-bold hover:bg-white transition-all flex flex-col items-center justify-center gap-2 shadow-lg"
                    >
                       <HardHat size={20} className="text-[#0070C0]" />
-                      Subcontractor
+                      On-Site Installer
                    </Link>
 
                    <button 

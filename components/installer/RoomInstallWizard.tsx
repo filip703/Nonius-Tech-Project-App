@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
-import { Device, Project, ModuleType } from '../../types';
+import { Device, Project, ModuleType, AccessPoint } from '../../types';
 import { useProjects } from '../../contexts/ProjectContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { X, Tv, Wifi, Smartphone, MonitorPlay, Share2, CheckCircle2, AlertTriangle, Save, Camera, ChevronDown, ChevronUp, AlertCircle, ListChecks, ArrowRight, Ban, ZapOff, MonitorOff, Phone } from 'lucide-react';
+import { X, Tv, Wifi, Smartphone, MonitorPlay, Share2, CheckCircle2, AlertTriangle, Save, Camera, ChevronDown, ChevronUp, AlertCircle, ListChecks, ArrowRight, Ban, ZapOff, MonitorOff, Phone, Plus } from 'lucide-react';
 import BarcodeScanner from '../BarcodeScanner';
 
 interface RoomSummary {
@@ -83,6 +84,28 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
     setDevices(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
   };
 
+  const addExtraDevice = (type: string) => {
+      let newDev: Device;
+      const base = {
+          id: `extra-${type}-${Date.now()}`,
+          room: roomData.room,
+          macAddress: '',
+          ipAddress: '',
+          serialNumber: '',
+          installed: false,
+          notes: `[Type:${type}]`,
+          installedBy: '',
+          installedAt: ''
+      };
+
+      if (type === 'TV') newDev = { ...base, name: 'Additional TV', brand: 'Samsung', model: 'HG Series' };
+      else if (type === 'WIFI') newDev = { ...base, name: 'Additional AP', brand: 'Ruckus', model: 'H550' };
+      else if (type === 'VOICE') newDev = { ...base, name: 'Additional Phone', brand: 'Mitel', model: '6920' };
+      else newDev = { ...base, name: 'Generic Device', brand: 'Generic', model: 'Generic' };
+
+      setDevices([...devices, newDev]);
+  };
+
   const toggleIssue = (deviceId: string, issue: string) => {
       setDeviceIssues(prev => {
           const currentSet = new Set(prev[deviceId] || []);
@@ -100,7 +123,9 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
     const newTvConfig = project.tvConfig ? { ...project.tvConfig } : undefined;
     const newWifiConfig = project.wifiConfig ? { ...project.wifiConfig } : undefined;
     const newCastConfig = project.castConfig ? { ...project.castConfig } : undefined;
-    // Note: Voice config structure in types.ts is loose (any), so we might skip syncing specifics there for now or add basic inventory if extended.
+    // For Voice, since typed as any, we handle initialization carefully
+    const newVoiceConfig = project.voiceConfig ? { ...project.voiceConfig } : { inventory: [] };
+    if (!newVoiceConfig.inventory) newVoiceConfig.inventory = [];
 
     let totalIssues = 0;
     let criticalIssues = 0;
@@ -126,51 +151,121 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
       // Ensure 'installed' is false if blocked
       const isInstalled = issuesList.some(i => i.includes('Blocked') || i.includes('No Power')) ? false : localDev.installed;
 
-      // Update Types
-      // TV
+      const commonFields = {
+          installed: isInstalled,
+          notes: finalNotes,
+          installedBy: currentUser.name,
+          installedAt: new Date().toISOString()
+      };
+
+      // --- SYNC TO TV INVENTORY ---
       if (localDev.notes?.includes('Type:TV') || localDev.name.includes('TV')) {
         if (newTvConfig) {
-            const idx = newTvConfig.inventory.findIndex(d => d.room === localDev.room);
-            const payload = { ...localDev, installed: isInstalled, notes: finalNotes, installedBy: currentUser.name, installedAt: new Date().toISOString() };
-            if (idx > -1) newTvConfig.inventory[idx] = payload;
-            else newTvConfig.inventory.push({ ...payload, id: `tv-${localDev.room}` });
+            // Check if device already exists in inventory by ID
+            const idx = newTvConfig.inventory.findIndex(d => d.id === localDev.id);
+            const tvPayload: Device = {
+                ...localDev,
+                ...commonFields
+            };
+
+            if (idx > -1) {
+                newTvConfig.inventory[idx] = tvPayload;
+            } else {
+                // If it was a 'new-tv' ID generated locally, check if there is a placeholder for this room that is uninstalled
+                const placeholderIdx = newTvConfig.inventory.findIndex(d => d.room === localDev.room && !d.installed);
+                if (placeholderIdx > -1 && localDev.id.startsWith('new-')) {
+                     // Overwrite the placeholder
+                     newTvConfig.inventory[placeholderIdx] = { ...tvPayload, id: newTvConfig.inventory[placeholderIdx].id };
+                } else {
+                     newTvConfig.inventory.push(tvPayload);
+                }
+            }
         }
       }
-      // WIFI
+
+      // --- SYNC TO WIFI INVENTORY ---
       if (localDev.notes?.includes('Type:WIFI') || localDev.name.includes('Access Point')) {
         if (newWifiConfig) {
-           const idx = newWifiConfig.inventory.findIndex(d => d.location === localDev.room);
-           const apPayload = {
-               id: idx > -1 ? newWifiConfig.inventory[idx].id : `ap-${localDev.room}`,
-               name: localDev.name, location: localDev.room, brand: localDev.brand,
-               mac: localDev.macAddress, ip: localDev.ipAddress, switchPort: '', vlanMgmt: '1', vlanHotspot: '10', channel: 'Auto', user: 'admin', pass: 'admin',
-               installed: isInstalled, notes: finalNotes
+           const idx = newWifiConfig.inventory.findIndex(d => d.id === localDev.id);
+           
+           // AccessPoint type is different from Device type
+           const apPayload: AccessPoint = {
+               id: idx > -1 ? newWifiConfig.inventory[idx].id : localDev.id,
+               name: localDev.name, 
+               location: localDev.room, 
+               brand: localDev.brand,
+               mac: localDev.macAddress, // Map wizard macAddress to AP mac
+               ip: localDev.ipAddress,   // Map wizard ipAddress to AP ip
+               switchPort: idx > -1 ? newWifiConfig.inventory[idx].switchPort : '', 
+               vlanMgmt: '1', 
+               vlanHotspot: '10', 
+               channel: 'Auto', 
+               user: 'admin', 
+               pass: 'admin',
+               installed: isInstalled, 
+               notes: finalNotes
            };
-           if (idx > -1) newWifiConfig.inventory[idx] = apPayload;
-           else newWifiConfig.inventory.push(apPayload);
+
+           if (idx > -1) {
+               newWifiConfig.inventory[idx] = apPayload;
+           } else {
+               // Check for placeholder match
+               const placeholderIdx = newWifiConfig.inventory.findIndex(d => d.location === localDev.room && !d.installed);
+               if (placeholderIdx > -1 && localDev.id.startsWith('new-')) {
+                   newWifiConfig.inventory[placeholderIdx] = { ...apPayload, id: newWifiConfig.inventory[placeholderIdx].id };
+               } else {
+                   newWifiConfig.inventory.push(apPayload);
+               }
+           }
         }
       }
-      // CAST
+
+      // --- SYNC TO CAST INVENTORY ---
       if (localDev.notes?.includes('Type:CAST') || localDev.name.includes('Cast') || localDev.name.includes('Dongle')) {
         if (newCastConfig) {
           const idx = newCastConfig.dongleInventory.roomRows.findIndex(d => d.room === localDev.room);
           const castPayload = {
-              id: idx > -1 ? newCastConfig.dongleInventory.roomRows[idx].id : `cast-${localDev.room}`,
-              room: localDev.room, sn: localDev.serialNumber, mac: localDev.macAddress,
-              state: isInstalled ? 'Online' : 'Pending', signal: '-65', notes: finalNotes
+              id: idx > -1 ? newCastConfig.dongleInventory.roomRows[idx].id : `cast-${localDev.room}-${Date.now()}`,
+              room: localDev.room, 
+              sn: localDev.serialNumber, 
+              mac: localDev.macAddress,
+              state: isInstalled ? 'Online' : 'Pending', 
+              signal: '-65', 
+              notes: finalNotes
           };
+          
           if (idx > -1) newCastConfig.dongleInventory.roomRows[idx] = castPayload as any;
           else newCastConfig.dongleInventory.roomRows.push(castPayload as any);
         }
       }
-      // VOICE (Logic placeholder as config structure is loose)
+
+      // --- SYNC TO VOICE INVENTORY ---
+      if (localDev.notes?.includes('Type:VOICE') || localDev.name.includes('Phone')) {
+          const idx = newVoiceConfig.inventory.findIndex((d: Device) => d.id === localDev.id);
+          const voicePayload: Device = {
+              ...localDev,
+              ...commonFields
+          };
+
+          if (idx > -1) {
+              newVoiceConfig.inventory[idx] = voicePayload;
+          } else {
+              const placeholderIdx = newVoiceConfig.inventory.findIndex((d: Device) => d.room === localDev.room && !d.installed);
+              if (placeholderIdx > -1 && localDev.id.startsWith('new-')) {
+                  newVoiceConfig.inventory[placeholderIdx] = { ...voicePayload, id: newVoiceConfig.inventory[placeholderIdx].id };
+              } else {
+                  newVoiceConfig.inventory.push(voicePayload);
+              }
+          }
+      }
     });
 
     saveProject({
       ...project,
       tvConfig: newTvConfig,
       wifiConfig: newWifiConfig,
-      castConfig: newCastConfig
+      castConfig: newCastConfig,
+      voiceConfig: newVoiceConfig
     });
 
     if (criticalIssues > 0) {
@@ -203,10 +298,6 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
     }
   };
 
-  const toggleSection = (section: string) => {
-    setExpandedSection(expandedSection === section ? null : section);
-  };
-
   const getDevicesByType = (type: string) => {
       if (type === 'TV') return devices.filter(d => d.name.includes('TV') || d.notes?.includes('Type:TV'));
       if (type === 'WIFI') return devices.filter(d => d.name.includes('Access Point') || d.notes?.includes('Type:WIFI'));
@@ -217,12 +308,14 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
 
   const renderDeviceSection = (title: string, type: string, icon: React.ReactNode, colorClass: string, checklist: string[]) => {
       const sectionDevices = getDevicesByType(type);
-      if (sectionDevices.length === 0) return null;
-
+      
+      // Allow section to render even if empty so we can add devices? 
+      // Current UX: Only render if module active. If module active but no devices, should show "Add".
+      
       return (
         <div className="bg-white rounded-[2rem] shadow-sm overflow-hidden border border-slate-200">
             <button 
-              onClick={() => toggleSection(type)}
+              onClick={() => setExpandedSection(expandedSection === type ? null : type)}
               className="w-full p-6 flex items-center justify-between bg-slate-50 border-b border-slate-100"
             >
               <div className="flex items-center gap-4">
@@ -231,7 +324,7 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
                 </div>
                 <div className="text-left">
                   <h3 className="font-bold text-[#171844]">{title}</h3>
-                  <p className="text-xs text-slate-500 font-medium">{sectionDevices.length} Unit(s)</p>
+                  <p className="text-xs text-slate-500 font-medium">{sectionDevices.length} Unit(s) Assigned</p>
                 </div>
               </div>
               {expandedSection === type ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -245,7 +338,11 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
                   return (
                   <div key={dev.id} className="space-y-4 pb-6 border-b border-slate-100 last:border-0">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{dev.name}</span>
+                        <input 
+                            value={dev.name}
+                            onChange={e => updateDevice(dev.id, { name: e.target.value })}
+                            className="text-xs font-black text-slate-600 uppercase tracking-widest bg-transparent border-b border-dashed border-slate-300 outline-none w-1/2"
+                        />
                         <div className="flex items-center gap-3">
                            <label className="flex items-center gap-2 cursor-pointer bg-slate-100 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors">
                                 <input 
@@ -365,6 +462,14 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
                     </div>
                   </div>
                 )})}
+                
+                {/* Add Device Button */}
+                <button 
+                    onClick={() => addExtraDevice(type)}
+                    className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center gap-2 text-slate-400 hover:text-[#0070C0] hover:border-[#0070C0] hover:bg-blue-50 transition-all font-bold text-xs uppercase tracking-widest"
+                >
+                    <Plus size={16} /> Add Another {type}
+                </button>
               </div>
             )}
         </div>
