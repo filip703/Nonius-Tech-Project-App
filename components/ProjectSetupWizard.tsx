@@ -81,9 +81,7 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
       contacts.push({ id: `inst-${i}`, name, email: '', mobile: '', role: 'Third-Party', jobDescription: 'Installer' });
     });
 
-    // Final mapping of selected solutions to actual modules
     const finalModules: ModuleType[] = [];
-    
     selectedSolutionTypes.forEach(sol => {
       if (sol === ModuleType.NETWORK) {
         finalModules.push(ModuleType.RACK, ModuleType.VLAN, ModuleType.SWITCHING);
@@ -92,7 +90,6 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
       }
     });
 
-    // Always add core management tools
     finalModules.push(ModuleType.PHOTOS, ModuleType.LABELS, ModuleType.RMA, ModuleType.HANDOVER);
 
     const newProject: Project = {
@@ -126,40 +123,35 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
   ];
 
   return (
-    <div className="fixed inset-0 bg-[#171844]/90 backdrop-blur-xl z-[100] flex items-center justify-center p-4 md:p-8">
-      <div className="bg-white w-full max-w-6xl h-[90vh] rounded-[2.5rem] shadow-2xl flex overflow-hidden animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 bg-[#171844]/90 backdrop-blur-xl z-[100] flex items-center justify-center p-0 md:p-8 overflow-y-auto">
+      <div className="bg-white w-full max-w-6xl md:h-[90vh] rounded-none md:rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row overflow-hidden min-h-screen md:min-h-0 animate-in zoom-in-95 duration-300">
         
-        {/* LEFT PANEL (30%) */}
-        <div className="w-80 md:w-96 bg-[#171844] p-12 text-white flex flex-col shrink-0 border-r border-white/5">
-          <div className="mb-16">
+        {/* SIDEBAR - TOP ON MOBILE */}
+        <div className="w-full md:w-80 lg:w-96 bg-[#171844] p-8 md:p-12 text-white flex flex-col shrink-0 border-b md:border-b-0 md:border-r border-white/5">
+          <div className="mb-8 md:mb-16 flex justify-between items-center md:block">
             <div className="flex items-center gap-4">
-              <NoniusLogo className="w-12 h-12" />
+              <NoniusLogo className="w-10 h-10 md:w-12 md:h-12" />
               <div>
-                <span className="block font-bold text-xl tracking-tighter leading-none">NONIUS</span>
+                <span className="block font-bold text-lg md:text-xl tracking-tighter leading-none">NONIUS</span>
                 <span className="text-[7px] font-bold tracking-[0.2em] text-[#87A237] uppercase">Hospitality Tech</span>
               </div>
             </div>
+            <button onClick={onCancel} className="md:hidden text-slate-400 p-2"><Trash2 size={20}/></button>
           </div>
 
-          <div className="flex-1 flex flex-col justify-center space-y-12">
+          <div className="flex flex-row md:flex-col justify-between md:justify-center md:space-y-12 mb-8 md:mb-0">
             {steps.map((s, idx) => (
-              <div key={s.id} className="relative flex items-start gap-6 group">
-                {/* Progress Line */}
-                {idx < steps.length - 1 && (
-                  <div className={`absolute left-[19px] top-10 w-[2px] h-12 ${step > s.id ? 'bg-[#87A237]' : 'bg-white/10'}`} />
-                )}
-                
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 border-2 ${
+              <div key={s.id} className="relative flex flex-col md:flex-row items-center md:items-start gap-2 md:gap-6 group">
+                <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-black text-[10px] md:text-xs transition-all duration-300 border-2 ${
                   step === s.id 
-                    ? 'bg-[#87A237] border-[#87A237] text-white shadow-lg shadow-green-900/20' 
+                    ? 'bg-[#87A237] border-[#87A237] text-white shadow-lg' 
                     : step > s.id 
                     ? 'bg-[#87A237] border-[#87A237] text-white' 
                     : 'bg-transparent border-white/20 text-white/40'
                 }`}>
-                  {step > s.id ? <Check size={18} /> : s.id}
+                  {step > s.id ? <Check size={16} /> : s.id}
                 </div>
-                
-                <div>
+                <div className="text-center md:text-left hidden md:block">
                   <h3 className={`font-black text-xs tracking-widest ${step === s.id ? 'text-white' : 'text-white/40'}`}>{s.label}</h3>
                   <p className={`text-[10px] font-medium mt-1 ${step === s.id ? 'text-slate-400' : 'text-white/20'}`}>{s.desc}</p>
                 </div>
@@ -167,7 +159,7 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
             ))}
           </div>
 
-          <div className="mt-auto">
+          <div className="mt-auto hidden md:block">
              <div className="p-6 bg-white/5 rounded-3xl border border-white/5 flex items-center gap-4">
                 <ShieldAlert className="text-[#87A237] shrink-0" size={20} />
                 <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
@@ -177,22 +169,22 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
           </div>
         </div>
 
-        {/* RIGHT PANEL (70%) */}
+        {/* MAIN CONTENT AREA */}
         <div className="flex-1 bg-[#F3F4F6] flex flex-col overflow-hidden relative">
-          <div className="flex-1 overflow-y-auto p-8 md:p-16">
+          <div className="flex-1 overflow-y-auto p-6 md:p-16">
             
-            {/* STEP 1: SITE & INSTALLATION TEAM */}
+            {/* STEP 1 */}
             {step === 1 && (
-              <div className="max-w-3xl mx-auto space-y-10 animate-in slide-in-from-right-8 duration-500">
-                <section className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
-                  <h2 className="text-xl font-black text-[#171844] mb-6 flex items-center gap-2">
+              <div className="max-w-3xl mx-auto space-y-6 md:space-y-10 animate-in slide-in-from-right-8 duration-500">
+                <section className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-sm border border-slate-200">
+                  <h2 className="text-lg md:text-xl font-black text-[#171844] mb-6 flex items-center gap-2">
                     <Building2 className="text-[#0070C0]" size={20} /> Site Information
                   </h2>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="col-span-2 space-y-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div className="md:col-span-2 space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Property Name</label>
                       <input 
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0] transition-all font-bold"
+                        className="w-full px-4 md:px-5 py-3 md:py-4 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0] font-bold"
                         value={siteData.name}
                         onChange={e => setSiteData({...siteData, name: e.target.value})}
                         placeholder="e.g. Ritz-Carlton Berlin"
@@ -201,7 +193,7 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
                     <div className="space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Site ID</label>
                       <input 
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0] font-mono text-sm uppercase"
+                        className="w-full px-4 md:px-5 py-3 md:py-4 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0] font-mono text-sm uppercase"
                         value={siteData.siteId}
                         onChange={e => setSiteData({...siteData, siteId: e.target.value})}
                         placeholder="DE-BER-01"
@@ -211,15 +203,15 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Room Count</label>
                       <input 
                         type="number"
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0] font-bold"
+                        className="w-full px-4 md:px-5 py-3 md:py-4 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0] font-bold"
                         value={siteData.rooms}
                         onChange={e => setSiteData({...siteData, rooms: parseInt(e.target.value) || 0})}
                       />
                     </div>
-                    <div className="col-span-2 space-y-1">
+                    <div className="md:col-span-2 space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Address</label>
                       <input 
-                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0]"
+                        className="w-full px-4 md:px-5 py-3 md:py-4 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0]"
                         value={siteData.address}
                         onChange={e => setSiteData({...siteData, address: e.target.value})}
                       />
@@ -227,104 +219,51 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
                   </div>
                 </section>
 
-                <section className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
-                  <h2 className="text-xl font-black text-[#171844] mb-6 flex items-center gap-2">
-                    <Users className="text-[#87A237]" size={20} /> Internal Nonius Team
+                <section className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-sm border border-slate-200">
+                  <h2 className="text-lg md:text-xl font-black text-[#171844] mb-6 flex items-center gap-2">
+                    <Users className="text-[#87A237]" size={20} /> Internal Team
                   </h2>
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                     <div className="space-y-1">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Project Manager</label>
-                       <input className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Name" value={siteData.pmName} onChange={e => setSiteData({...siteData, pmName: e.target.value})} />
+                       <input className="w-full px-4 md:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Name" value={siteData.pmName} onChange={e => setSiteData({...siteData, pmName: e.target.value})} />
                     </div>
                     <div className="space-y-1">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">PM Email</label>
-                       <input className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Email" value={siteData.pmEmail} onChange={e => setSiteData({...siteData, pmEmail: e.target.value})} />
-                    </div>
-                    <div className="space-y-1">
-                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lead Technician</label>
-                       <input className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Name" value={siteData.leadTechName} onChange={e => setSiteData({...siteData, leadTechName: e.target.value})} />
-                    </div>
-                    <div className="space-y-1">
-                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tech Phone</label>
-                       <input className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono" placeholder="+49..." value={siteData.leadTechPhone} onChange={e => setSiteData({...siteData, leadTechPhone: e.target.value})} />
-                    </div>
-                  </div>
-
-                  <div className="mt-8 pt-8 border-t border-slate-100">
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Additional Installers</label>
-                      <button onClick={handleAddInstaller} className="text-[#0070C0] text-[10px] font-black uppercase flex items-center gap-1 hover:underline">
-                        <UserPlus size={14} /> Add Installer
-                      </button>
-                    </div>
-                    <div className="space-y-3">
-                      {installers.map((inst, idx) => (
-                        <div key={idx} className="flex gap-2 animate-in slide-in-from-left-2">
-                           <input 
-                            className="flex-1 px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" 
-                            placeholder="Full Name" 
-                            value={inst}
-                            onChange={e => handleInstallerChange(idx, e.target.value)}
-                           />
-                           {installers.length > 1 && (
-                             <button onClick={() => handleRemoveInstaller(idx)} className="p-3 text-slate-300 hover:text-red-500">
-                               <Trash2 size={18} />
-                             </button>
-                           )}
-                        </div>
-                      ))}
+                       <input className="w-full px-4 md:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Email" value={siteData.pmEmail} onChange={e => setSiteData({...siteData, pmEmail: e.target.value})} />
                     </div>
                   </div>
                 </section>
               </div>
             )}
 
-            {/* STEP 2: CLIENT CONTACTS */}
+            {/* STEP 2 */}
             {step === 2 && (
-              <div className="max-w-3xl mx-auto space-y-8 animate-in slide-in-from-right-8 duration-500">
-                <div className="bg-blue-600 text-white p-8 rounded-[2rem] shadow-xl flex items-center gap-6">
-                   <div className="w-16 h-16 rounded-3xl bg-white/10 flex items-center justify-center">
-                     <Briefcase size={32} />
-                   </div>
-                   <div>
-                      <h2 className="text-2xl font-black">Hotel Stakeholders</h2>
-                      <p className="text-blue-100 text-sm">Designate the primary contacts for system handovers and sign-off.</p>
-                   </div>
-                </div>
-
+              <div className="max-w-3xl mx-auto space-y-4 md:space-y-8 animate-in slide-in-from-right-8 duration-500">
                 {[
                   { id: 'gm' as const, label: 'General Manager', icon: User },
                   { id: 'it' as const, label: 'IT Manager', icon: Network },
                   { id: 'maintenance' as const, label: 'Maintenance Chief', icon: Wrench },
-                  { id: 'onsite' as const, label: 'On-Site Primary Contact', icon: UserPlus },
                 ].map(contact => (
-                  <div key={contact.id} className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-                    <h3 className="text-sm font-black text-[#171844] uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <div key={contact.id} className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 shadow-sm">
+                    <h3 className="text-sm font-black text-[#171844] uppercase tracking-widest mb-4 flex items-center gap-2">
                        <contact.icon className="text-[#0070C0]" size={16} /> {contact.label}
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                        <div className="space-y-1">
                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
                          <input 
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" 
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none" 
                           value={clientData[contact.id].name}
                           onChange={e => setClientData({...clientData, [contact.id]: {...clientData[contact.id], name: e.target.value}})}
                          />
                        </div>
                        <div className="space-y-1">
-                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
+                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Email</label>
                          <input 
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" 
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none" 
                           value={clientData[contact.id].email}
                           onChange={e => setClientData({...clientData, [contact.id]: {...clientData[contact.id], email: e.target.value}})}
-                         />
-                       </div>
-                       <div className="space-y-1">
-                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Mobile / Extension</label>
-                         <input 
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" 
-                          value={clientData[contact.id].phone}
-                          onChange={e => setClientData({...clientData, [contact.id]: {...clientData[contact.id], phone: e.target.value}})}
                          />
                        </div>
                     </div>
@@ -333,15 +272,15 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
               </div>
             )}
 
-            {/* STEP 3: SOLUTION SCOPE */}
+            {/* STEP 3 */}
             {step === 3 && (
-              <div className="max-w-4xl mx-auto space-y-12 animate-in slide-in-from-right-8 duration-500">
+              <div className="max-w-4xl mx-auto space-y-8 md:space-y-12 animate-in slide-in-from-right-8 duration-500">
                 <div className="text-center space-y-2">
-                   <h2 className="text-3xl font-black text-[#171844]">Select Nonius Solutions</h2>
-                   <p className="text-slate-500 font-medium italic">Configure the technical ecosystem for this property.</p>
+                   <h2 className="text-2xl md:text-3xl font-black text-[#171844]">Selected Solutions</h2>
+                   <p className="text-slate-500 font-medium text-sm md:text-base italic">Initialize technical services scope.</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   {SELECTABLE_SOLUTIONS.map((sol) => {
                     const Icon = sol.icon;
                     const isSelected = selectedSolutionTypes.includes(sol.type);
@@ -349,29 +288,22 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
                       <button
                         key={sol.type}
                         onClick={() => toggleSolution(sol.type)}
-                        className={`group p-8 rounded-[2.5rem] border-2 text-left transition-all duration-300 relative overflow-hidden ${
+                        className={`group p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border-2 text-left transition-all duration-300 relative overflow-hidden ${
                           isSelected 
                             ? 'bg-[#171844] border-[#171844] shadow-2xl scale-[1.02]' 
                             : 'bg-white border-slate-200 hover:border-[#87A237]'
                         }`}
                       >
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-colors ${
+                        <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center mb-6 transition-colors ${
                           isSelected ? 'bg-[#87A237] text-white' : 'bg-slate-50 text-slate-400'
                         }`}>
-                          <Icon size={28} />
+                          <Icon size={24} />
                         </div>
-                        
-                        <p className={`font-black text-lg ${isSelected ? 'text-white' : 'text-[#171844]'}`}>
-                           {sol.label}
-                        </p>
-                        <p className={`text-[10px] mt-2 font-medium ${isSelected ? 'text-slate-400' : 'text-slate-400'}`}>
-                           {sol.desc}
-                        </p>
-
-                        <div className={`absolute top-6 right-6 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                        <p className={`font-black text-base md:text-lg ${isSelected ? 'text-white' : 'text-[#171844]'}`}>{sol.label}</p>
+                        <div className={`absolute top-4 right-4 md:top-6 md:right-6 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
                           isSelected ? 'bg-[#87A237] border-[#87A237] text-[#171844]' : 'border-slate-100 text-transparent'
                         }`}>
-                           <Check size={14} />
+                           <Check size={12} />
                         </div>
                       </button>
                     );
@@ -382,25 +314,22 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
           </div>
 
           {/* ACTION FOOTER */}
-          <div className="h-24 bg-white border-t border-slate-200 px-12 flex items-center justify-between shrink-0">
+          <div className="h-20 md:h-24 bg-white border-t border-slate-200 px-6 md:px-12 flex items-center justify-between shrink-0 sticky bottom-0">
             <button 
               onClick={step === 1 ? onCancel : () => setStep(step - 1)}
-              className="px-8 py-3 text-slate-400 font-black text-xs uppercase tracking-widest hover:text-[#171844] transition-colors"
+              className="px-4 md:px-8 py-3 text-slate-400 font-black text-[10px] md:text-xs uppercase tracking-widest hover:text-[#171844]"
             >
-              {step === 1 ? 'Cancel Setup' : 'Back'}
+              {step === 1 ? 'Cancel' : 'Back'}
             </button>
-            
             <button 
               onClick={step === 3 ? handleFinish : () => setStep(step + 1)}
               disabled={step === 1 && !isStep1Valid}
-              className={`flex items-center gap-3 px-10 py-4 rounded-[2rem] font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-indigo-100 ${
-                step === 3 
-                  ? 'bg-[#87A237] text-white hover:scale-105 active:scale-95' 
-                  : 'bg-[#171844] text-white hover:opacity-95'
-              } disabled:opacity-30 disabled:cursor-not-allowed`}
+              className={`flex items-center gap-3 px-6 md:px-10 py-3 md:py-4 rounded-[1.5rem] md:rounded-[2rem] font-black text-xs md:text-sm uppercase tracking-widest transition-all ${
+                step === 3 ? 'bg-[#87A237] text-white' : 'bg-[#171844] text-white'
+              } disabled:opacity-30`}
             >
-              {step === 3 ? 'Initialize Project Hub' : 'Continue'}
-              {step < 3 && <ChevronRight size={18} />}
+              {step === 3 ? 'Initialize' : 'Next'}
+              {step < 3 && <ChevronRight size={16} />}
             </button>
           </div>
         </div>

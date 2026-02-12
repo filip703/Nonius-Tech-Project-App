@@ -469,6 +469,8 @@ export interface Project {
   handoverSignedAt?: string;
   handoverSignedBy?: string;
   isLocked?: boolean;
+  lastGitSync?: string;
+  repoUrl?: string;
 }
 
 export interface AuthUser {

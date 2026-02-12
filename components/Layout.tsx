@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Menu, X, LayoutDashboard, FolderOpen, ExternalLink, 
   UserCog, Search, Save, RefreshCw, Check, CircleUser, 
-  ChevronDown, Bell, Lock, Unlock, ShieldAlert
+  ChevronDown, Bell, Lock, Unlock, ShieldAlert, Github
 } from 'lucide-react';
 import { useProjects } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,6 +31,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [gitStatus, setGitStatus] = useState<'synced' | 'pending' | 'syncing'>('synced');
   const [pinInput, setPinInput] = useState('');
   const [showUnlockModal, setShowUnlockModal] = useState(false);
 
@@ -42,8 +43,19 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     saveProject(activeProject);
     setTimeout(() => {
       setSaveStatus('saved');
+      setGitStatus('pending'); // Mark as pending sync to Git after local save
       setTimeout(() => setSaveStatus('idle'), 3000);
     }, 800);
+  };
+
+  const handleGitSync = () => {
+    if (!activeProject || isProjectReadOnly) return;
+    setGitStatus('syncing');
+    // Simulate GitHub Push
+    setTimeout(() => {
+      saveProject({ ...activeProject, lastGitSync: new Date().toISOString() });
+      setGitStatus('synced');
+    }, 2000);
   };
 
   const handleUnlock = () => {
@@ -182,12 +194,27 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               )}
            </div>
 
-           <div className="flex items-center gap-3 md:gap-6">
+           <div className="flex items-center gap-2 md:gap-4">
               {activeProject && !isProjectReadOnly && (
-                <button onClick={handleSave} disabled={saveStatus !== 'idle'} className={`hidden sm:flex items-center gap-2 px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all shadow-md ${saveStatus === 'saved' ? 'bg-[#87A237] text-white' : 'bg-[#0070C0] text-white'}`}>
-                  {saveStatus === 'saving' ? <RefreshCw size={14} className="animate-spin" /> : saveStatus === 'saved' ? <Check size={14} /> : <Save size={14} />}
-                  {saveStatus === 'saving' ? 'Syncing...' : saveStatus === 'saved' ? 'Synced' : 'Save'}
-                </button>
+                <div className="flex items-center gap-2">
+                   <button 
+                    onClick={handleGitSync} 
+                    disabled={gitStatus === 'syncing' || gitStatus === 'synced'}
+                    title={gitStatus === 'synced' ? 'Manifest matches GitHub' : 'Push changes to GitHub'}
+                    className={`p-2.5 rounded-xl transition-all ${
+                      gitStatus === 'syncing' ? 'bg-slate-100 text-slate-400 animate-spin' :
+                      gitStatus === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-200' :
+                      'bg-slate-50 text-slate-400'
+                    }`}
+                   >
+                      <Github size={18} />
+                   </button>
+
+                   <button onClick={handleSave} disabled={saveStatus !== 'idle'} className={`hidden sm:flex items-center gap-2 px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all shadow-md ${saveStatus === 'saved' ? 'bg-[#87A237] text-white' : 'bg-[#0070C0] text-white'}`}>
+                    {saveStatus === 'saving' ? <RefreshCw size={14} className="animate-spin" /> : saveStatus === 'saved' ? <Check size={14} /> : <Save size={14} />}
+                    {saveStatus === 'saving' ? 'Syncing...' : saveStatus === 'saved' ? 'Synced' : 'Save'}
+                  </button>
+                </div>
               )}
 
               <div className="relative">
