@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   Hotel, MapPin, Hash, User, ChevronRight, Check, Tv, Share2, 
   Phone, Wifi, MonitorPlay, Server, ShieldCheck, Network, 
-  Mail, Users, UserPlus, Trash2, Briefcase, Wrench, ShieldAlert, Building2, Globe, Smartphone
+  Mail, Users, UserPlus, Trash2, Briefcase, Wrench, ShieldAlert, Building2, Globe, Smartphone, HardHat
 } from 'lucide-react';
 import { ModuleType, Project, ProjectContact } from '../types';
 import { NoniusLogo } from '../App';
@@ -39,7 +39,9 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
     leadTechName: '',
     leadTechPhone: '',
   });
-  const [installers, setInstallers] = useState<string[]>(['']);
+  
+  // Installers state with subcontractor flag
+  const [installers, setInstallers] = useState<{name: string, isSubcontractor: boolean}[]>([{ name: '', isSubcontractor: false }]);
 
   // State for Step 2
   const [clientData, setClientData] = useState({
@@ -52,11 +54,16 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
   // State for Step 3
   const [selectedSolutionTypes, setSelectedSolutionTypes] = useState<ModuleType[]>([]);
 
-  const handleAddInstaller = () => setInstallers([...installers, '']);
+  const handleAddInstaller = () => setInstallers([...installers, { name: '', isSubcontractor: false }]);
   const handleRemoveInstaller = (index: number) => setInstallers(installers.filter((_, i) => i !== index));
-  const handleInstallerChange = (index: number, value: string) => {
+  const handleInstallerNameChange = (index: number, value: string) => {
     const next = [...installers];
-    next[index] = value;
+    next[index].name = value;
+    setInstallers(next);
+  };
+  const handleInstallerTypeChange = (index: number, isSub: boolean) => {
+    const next = [...installers];
+    next[index].isSubcontractor = isSub;
     setInstallers(next);
   };
 
@@ -77,8 +84,15 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
       { id: 'mc', name: clientData.maintenance.name, email: clientData.maintenance.email, mobile: clientData.maintenance.phone, role: 'Client', jobDescription: 'Maintenance Chief' },
     ];
 
-    installers.filter(Boolean).forEach((name, i) => {
-      contacts.push({ id: `inst-${i}`, name, email: '', mobile: '', role: 'Third-Party', jobDescription: 'Installer' });
+    installers.filter(i => i.name).forEach((inst, i) => {
+      contacts.push({ 
+        id: `inst-${i}`, 
+        name: inst.name, 
+        email: '', 
+        mobile: '', 
+        role: inst.isSubcontractor ? 'Third-Party' : 'Nonius', 
+        jobDescription: inst.isSubcontractor ? 'Subcontractor Installer' : 'Field Installer' 
+      });
     });
 
     const finalModules: ModuleType[] = [];
@@ -191,7 +205,7 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Site ID</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">NCM ID</label>
                       <input 
                         className="w-full px-4 md:px-5 py-3 md:py-4 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0] font-mono text-sm uppercase"
                         value={siteData.siteId}
@@ -223,14 +237,64 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
                   <h2 className="text-lg md:text-xl font-black text-[#171844] mb-6 flex items-center gap-2">
                     <Users className="text-[#87A237]" size={20} /> Internal Team
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                    <div className="space-y-1">
-                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Project Manager</label>
-                       <input className="w-full px-4 md:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Name" value={siteData.pmName} onChange={e => setSiteData({...siteData, pmName: e.target.value})} />
+                  <div className="space-y-6">
+                    {/* Project Manager */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                      <div className="space-y-1">
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Project Manager</label>
+                         <input className="w-full px-4 md:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Name" value={siteData.pmName} onChange={e => setSiteData({...siteData, pmName: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">PM Email</label>
+                         <input className="w-full px-4 md:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Email" value={siteData.pmEmail} onChange={e => setSiteData({...siteData, pmEmail: e.target.value})} />
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">PM Email</label>
-                       <input className="w-full px-4 md:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Email" value={siteData.pmEmail} onChange={e => setSiteData({...siteData, pmEmail: e.target.value})} />
+
+                    {/* Tech Lead */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                      <div className="space-y-1">
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tech Lead</label>
+                         <input className="w-full px-4 md:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Name" value={siteData.leadTechName} onChange={e => setSiteData({...siteData, leadTechName: e.target.value})} />
+                      </div>
+                      <div className="space-y-1">
+                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lead Phone</label>
+                         <input className="w-full px-4 md:px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Phone" value={siteData.leadTechPhone} onChange={e => setSiteData({...siteData, leadTechPhone: e.target.value})} />
+                      </div>
+                    </div>
+
+                    {/* Installers List */}
+                    <div className="pt-4 border-t border-slate-100">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Installers & Subcontractors</label>
+                       <div className="space-y-3">
+                          {installers.map((inst, idx) => (
+                            <div key={idx} className="flex items-center gap-3">
+                               <input 
+                                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" 
+                                placeholder="Installer Name" 
+                                value={inst.name}
+                                onChange={e => handleInstallerNameChange(idx, e.target.value)}
+                               />
+                               <label className={`flex items-center gap-2 px-4 py-3 border rounded-xl cursor-pointer transition-all ${inst.isSubcontractor ? 'bg-[#E9F2F8] border-[#0070C0] text-[#0070C0]' : 'bg-white border-slate-200 text-slate-400'}`}>
+                                  <input 
+                                    type="checkbox" 
+                                    className="hidden" 
+                                    checked={inst.isSubcontractor} 
+                                    onChange={e => handleInstallerTypeChange(idx, e.target.checked)}
+                                  />
+                                  <HardHat size={16} />
+                                  <span className="text-[10px] font-bold uppercase whitespace-nowrap">Subcontractor</span>
+                               </label>
+                               {installers.length > 1 && (
+                                 <button onClick={() => handleRemoveInstaller(idx)} className="p-3 text-slate-300 hover:text-red-500 rounded-xl hover:bg-red-50 transition-all">
+                                   <Trash2 size={18} />
+                                 </button>
+                               )}
+                            </div>
+                          ))}
+                          <button onClick={handleAddInstaller} className="text-[#0070C0] text-xs font-bold flex items-center gap-2 hover:underline p-2">
+                             <UserPlus size={16} /> Add Installer
+                          </button>
+                       </div>
                     </div>
                   </div>
                 </section>

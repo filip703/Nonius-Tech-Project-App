@@ -13,6 +13,8 @@ import { UserRole, ModuleType, Project } from '../types';
 import GeminiAssistant from './GeminiAssistant';
 import NetworkToolkit from './NetworkToolkit';
 import ProjectSetupWizard from './ProjectSetupWizard';
+import NotificationBell from './NotificationBell';
+import ExportButton from './ExportButton';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -195,8 +197,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
            </div>
 
            <div className="flex items-center gap-2 md:gap-4">
+              <NotificationBell />
+              
               {activeProject && !isProjectReadOnly && (
                 <div className="flex items-center gap-2">
+                   <ExportButton project={activeProject} />
                    <button 
                     onClick={handleGitSync} 
                     disabled={gitStatus === 'syncing' || gitStatus === 'synced'}

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Plus, Trash2, Settings, Server, Printer, Monitor, Activity, Shield, Battery, ChevronRight, Hash } from 'lucide-react';
 import { Project, Rack, RackDevice, UserRole } from '../types';
 
@@ -19,14 +19,29 @@ interface RackBuilderProps {
   project: Project;
   onUpdate: (config: { racks: Rack[] }) => void;
   role: UserRole;
+  initialRackId?: string;
 }
 
-const RackBuilder: React.FC<RackBuilderProps> = ({ project, onUpdate, role }) => {
+const RackBuilder: React.FC<RackBuilderProps> = ({ project, onUpdate, role, initialRackId }) => {
   const isViewOnly = role === UserRole.PROJECT_MANAGER;
   const config = project.rackConfig || { racks: [{ id: 'rack-1', name: 'Main MDF', height: 42, devices: [] }] };
   const [activeRackId, setActiveRackId] = useState(config.racks[0].id);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [isPrintMode, setIsPrintMode] = useState(false);
+
+  // Effect to set initial rack if provided
+  useEffect(() => {
+    if (initialRackId) {
+        // If the rack exists, select it
+        const exists = config.racks.find(r => r.id === initialRackId);
+        if (exists) {
+            setActiveRackId(initialRackId);
+        } else {
+            // Optional: Auto-create if it's a structural rack like MDF/IDF and doesn't exist?
+            // For now, we default to the first one or let the parent handle creation
+        }
+    }
+  }, [initialRackId]);
 
   const activeRack = config.racks.find(r => r.id === activeRackId) || config.racks[0];
 
@@ -85,12 +100,12 @@ const RackBuilder: React.FC<RackBuilderProps> = ({ project, onUpdate, role }) =>
       {/* Tab Navigation */}
       {!isPrintMode && (
         <div className="flex items-center justify-between">
-          <div className="flex p-1 bg-slate-200/50 rounded-2xl gap-1">
+          <div className="flex p-1 bg-slate-200/50 rounded-2xl gap-1 overflow-x-auto max-w-[70vw] scrollbar-hide">
             {config.racks.map(rack => (
               <button
                 key={rack.id}
                 onClick={() => setActiveRackId(rack.id)}
-                className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
                   activeRackId === rack.id ? 'bg-white text-[#171844] shadow-sm' : 'text-slate-500 hover:bg-white/40'
                 }`}
               >
@@ -104,20 +119,20 @@ const RackBuilder: React.FC<RackBuilderProps> = ({ project, onUpdate, role }) =>
           </div>
           <button 
             onClick={() => setIsPrintMode(!isPrintMode)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 shrink-0"
           >
-            <Printer size={16} /> {isPrintMode ? 'Exit Schematic Mode' : 'Schematic Print Mode'}
+            <Printer size={16} /> {isPrintMode ? 'Exit Schematic' : 'Print Mode'}
           </button>
         </div>
       )}
 
-      <div className="flex gap-12 items-start">
+      <div className="flex flex-col lg:flex-row gap-12 items-start">
         {/* Device Palette */}
         {!isPrintMode && !isViewOnly && (
-          <aside className="w-64 space-y-6 shrink-0 sticky top-24">
+          <aside className="w-full lg:w-64 space-y-6 shrink-0 lg:sticky lg:top-24">
             <div>
               <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Equipment Library</h3>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
                 {DEVICE_TEMPLATES.map(temp => (
                   <button
                     key={temp.type}
@@ -150,7 +165,7 @@ const RackBuilder: React.FC<RackBuilderProps> = ({ project, onUpdate, role }) =>
         )}
 
         {/* Rack Visualizer */}
-        <div className="flex-1 flex justify-center bg-slate-50 rounded-[3rem] p-12 border border-slate-200 shadow-inner">
+        <div className="flex-1 w-full flex justify-center bg-slate-50 rounded-[3rem] p-6 lg:p-12 border border-slate-200 shadow-inner">
           <div className="relative">
              {/* Rack Frame */}
              <div className="bg-[#1e1f26] border-[8px] border-[#2d2f3b] rounded-lg shadow-2xl w-[320px] relative overflow-hidden" style={{ minHeight: '1200px' }}>
@@ -226,7 +241,7 @@ const RackBuilder: React.FC<RackBuilderProps> = ({ project, onUpdate, role }) =>
 
         {/* Rack Inspector */}
         {!isPrintMode && (
-          <aside className="w-80 space-y-6 shrink-0 bg-white p-8 rounded-[2.5rem] border border-slate-200">
+          <aside className="w-full lg:w-80 space-y-6 shrink-0 bg-white p-8 rounded-[2.5rem] border border-slate-200">
              <div className="flex items-center gap-2 mb-6">
                 <Settings size={18} className="text-[#0070C0]" />
                 <h3 className="text-sm font-black text-[#171844] uppercase tracking-widest">Rack Settings</h3>

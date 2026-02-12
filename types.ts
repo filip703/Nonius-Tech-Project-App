@@ -93,6 +93,7 @@ export interface Device {
   installed: boolean;
   installedBy?: string;
   installedAt?: string;
+  notes?: string;
 }
 
 export interface NetworkInterface {
@@ -343,6 +344,8 @@ export interface AccessPoint {
   channel: string;
   user: string;
   pass: string;
+  installed?: boolean;
+  notes?: string;
 }
 
 export interface WifiModuleConfig {

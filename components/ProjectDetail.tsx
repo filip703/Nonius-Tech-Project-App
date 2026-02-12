@@ -180,7 +180,7 @@ const ProjectDetail: React.FC<{ role: UserRole }> = ({ role }) => {
                         </div>
                      </div>
                      <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl">
-                        <refresh-cw size={20} className="text-slate-400" />
+                        <RefreshCw size={20} className="text-slate-400" />
                         <div>
                           <p className="text-[8px] font-black text-slate-500 uppercase">Last Synchronization</p>
                           <p className="text-[10px] font-bold">{project.lastGitSync ? new Date(project.lastGitSync).toLocaleString() : 'Never Synced'}</p>

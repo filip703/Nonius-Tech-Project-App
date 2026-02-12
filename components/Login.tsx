@@ -1,9 +1,9 @@
 
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { NoniusLogo } from '../App';
-import { ShieldCheck, LogIn, Globe, UserCheck, LayoutDashboard } from 'lucide-react';
+import { ShieldCheck, LogIn, Globe, UserCheck, LayoutDashboard, Wrench, HardHat } from 'lucide-react';
 import { UserRole } from '../types';
 
 const Login: React.FC = () => {
@@ -49,7 +49,7 @@ const Login: React.FC = () => {
              <div className="p-6 bg-white/5 rounded-3xl border border-white/5 text-left">
                 <h2 className="text-white font-bold text-lg mb-2">Access Portal</h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
-                  Sign in to manage deployments or view project highlights and real-time site readiness.
+                  Select your role to access the project environment.
                 </p>
              </div>
 
@@ -59,35 +59,37 @@ const Login: React.FC = () => {
                   className="w-full py-5 bg-[#87A237] text-white rounded-[2rem] font-bold shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
                 >
                     <LogIn size={20} />
-                    Sign in with Nonius SSO
+                    Log in with Nonius SSO
                 </button>
 
-                <button 
-                  onClick={handleTechLogin}
-                  className="w-full py-4 bg-white/10 text-white/80 border border-white/10 rounded-[2rem] text-sm font-bold hover:bg-white/20 hover:text-white transition-all flex items-center justify-center gap-2"
-                >
-                    <UserCheck size={18} />
-                    Connect as Test Technician
-                </button>
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                   <Link 
+                    to="/installer"
+                    className="w-full py-4 bg-[#E9F2F8] text-[#171844] rounded-[2rem] text-xs font-bold hover:bg-white transition-all flex flex-col items-center justify-center gap-2 shadow-lg"
+                   >
+                      <HardHat size={20} className="text-[#0070C0]" />
+                      Subcontractor
+                   </Link>
 
-                <div className="pt-2">
                    <button 
                     onClick={handleClientLogin}
-                    className="w-full py-4 bg-[#0070C0] text-white rounded-[2rem] text-sm font-bold hover:bg-[#0070C0]/90 transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-900/40"
+                    className="w-full py-4 bg-[#171844]/50 text-white border border-white/10 rounded-[2rem] text-xs font-bold hover:bg-white/10 transition-all flex flex-col items-center justify-center gap-2"
                    >
-                      <LayoutDashboard size={18} />
-                      Sign in as Client Viewer
+                      <LayoutDashboard size={20} />
+                      Client View
                    </button>
                 </div>
              </div>
           </div>
 
-          <div className="pt-6 border-t border-white/5 flex items-center justify-center gap-6 text-slate-500">
-             <div className="flex items-center gap-2 text-[10px] font-bold uppercase">
-                <ShieldCheck size={14} /> Secure Terminal
-             </div>
-             <div className="flex items-center gap-2 text-[10px] font-bold uppercase">
-                <Globe size={14} /> Global v4.0
+          <div className="pt-6 border-t border-white/5 flex flex-col items-center justify-center gap-4 text-slate-500">
+             <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase">
+                    <ShieldCheck size={14} /> Secure Terminal
+                </div>
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase">
+                    <Globe size={14} /> Global v4.0
+                </div>
              </div>
           </div>
         </div>

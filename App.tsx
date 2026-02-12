@@ -7,8 +7,11 @@ import ClientDashboard from './components/ClientDashboard';
 import ClientHub from './components/ClientHub';
 import Login from './components/Login';
 import Layout from './components/Layout';
+import InstallerLogin from './components/installer/InstallerLogin';
+import InstallerDashboard from './components/installer/InstallerDashboard';
 import { ProjectProvider, useProjects } from './contexts/ProjectContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { Network } from 'lucide-react';
 import { UserRole } from './types';
 
@@ -41,8 +44,10 @@ const AppContent = () => {
 
   return (
     <Routes>
+      {/* Main Auth */}
       <Route path="/login" element={<Login />} />
       
+      {/* Admin/Tech Routes */}
       <Route path="/" element={
         <ProtectedRoute>
           {user?.role === UserRole.CLIENT ? <ClientHub /> : <ProjectHub />}
@@ -69,6 +74,10 @@ const AppContent = () => {
           </div>
         </ProtectedRoute>
       } />
+
+      {/* Installer Portal Routes (No Auth Context Required for Access via Code) */}
+      <Route path="/installer" element={<InstallerLogin />} />
+      <Route path="/installer/:id/dashboard" element={<InstallerDashboard />} />
       
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -78,9 +87,11 @@ const AppContent = () => {
 const App = () => (
   <AuthProvider>
     <ProjectProvider>
-      <HashRouter>
-        <AppContent />
-      </HashRouter>
+      <NotificationProvider>
+        <HashRouter>
+          <AppContent />
+        </HashRouter>
+      </NotificationProvider>
     </ProjectProvider>
   </AuthProvider>
 );
