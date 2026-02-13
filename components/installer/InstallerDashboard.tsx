@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProjects } from '../../contexts/ProjectContext';
 import { Device, ModuleType, ProjectContact } from '../../types';
-import { Filter, CheckCircle2, AlertCircle, Clock, MapPin, Search, ArrowLeft, MoreVertical, LogOut, LayoutGrid, CheckSquare, AlertTriangle, Ban, Server, Phone, Tv, Wifi, Share2, Mail, User, ChevronUp, ChevronDown } from 'lucide-react';
+import { Filter, CheckCircle2, AlertCircle, Clock, MapPin, Search, ArrowLeft, MoreVertical, LogOut, LayoutGrid, CheckSquare, AlertTriangle, Ban, Server, Phone, Tv, Wifi, Share2, Mail, User, ChevronUp, ChevronDown, Globe } from 'lucide-react';
 import RoomInstallWizard from './RoomInstallWizard';
 import RackInstallWizard from './RackInstallWizard';
 import ProjectChat from '../ProjectChat';
@@ -84,6 +84,13 @@ const InstallerDashboard: React.FC = () => {
     }
     if (project.selectedModules.includes(ModuleType.VOICE)) {
         addDevices(project.voiceConfig?.inventory, 'VOICE');
+    }
+    
+    // Webapp is usually virtual, but we track it as a "device" for completion status in rooms
+    if (project.selectedModules.includes(ModuleType.WEBAPP)) {
+        // We look for pseudo-devices stored in TV or generic inventory tagged as Webapp
+        // Or we just rely on the room install wizard to create them. 
+        // For existing data, we might not have them yet, but we will process them if found.
     }
 
     const definedRoomCount = project.rooms || 0;
@@ -178,7 +185,8 @@ const InstallerDashboard: React.FC = () => {
           TV: { total: 0, done: 0 },
           WIFI: { total: 0, done: 0 },
           CAST: { total: 0, done: 0 },
-          VOICE: { total: 0, done: 0 }
+          VOICE: { total: 0, done: 0 },
+          WEBAPP: { total: 0, done: 0 }
       };
 
       guestRooms.forEach(room => {
@@ -196,6 +204,9 @@ const InstallerDashboard: React.FC = () => {
               } else if (dev.name.includes('Phone') || dev.notes?.includes('Type:VOICE')) {
                   moduleBreakdown.VOICE.total++;
                   if (isDone) moduleBreakdown.VOICE.done++;
+              } else if (dev.notes?.includes('Type:WEBAPP')) {
+                  moduleBreakdown.WEBAPP.total++;
+                  if (isDone) moduleBreakdown.WEBAPP.done++;
               }
           });
       });
@@ -236,125 +247,131 @@ const InstallerDashboard: React.FC = () => {
         />
       )}
 
-      {/* Header */}
-      <header className="bg-[#171844] text-white p-6 rounded-b-[2.5rem] shadow-xl sticky top-0 z-20 transition-all duration-300">
-        <div className="flex items-center justify-between mb-2">
-          <Link to="/installer" className="p-2 bg-white/10 rounded-xl hover:bg-white/20 active:scale-95 transition-all">
-            <LogOut size={20} />
-          </Link>
-          <div className="flex flex-col items-center">
-             <h1 className="font-bold text-lg leading-tight text-center">{project.name}</h1>
-             <div className="flex items-center gap-2 text-[10px] font-bold text-[#87A237] uppercase tracking-widest mt-1">
-                <span>NCM: {project.siteId.split('-').pop()}</span>
-                <span className="w-1 h-1 rounded-full bg-white/30" />
-                <span>Tech: {currentUser.name}</span>
-             </div>
+      {/* Sticky Header Wrapper */}
+      <div className="sticky top-0 z-20 bg-[#F3F4F6]">
+        {/* Header */}
+        <header className="bg-[#171844] text-white p-4 md:p-6 rounded-b-[2.5rem] shadow-xl transition-all duration-300">
+          <div className="flex items-center justify-between mb-2">
+            <Link to="/installer" className="p-2 bg-white/10 rounded-xl hover:bg-white/20 active:scale-95 transition-all">
+              <LogOut size={20} />
+            </Link>
+            <div className="flex flex-col items-center flex-1 mx-4 min-w-0">
+               <h1 className="font-bold text-base md:text-lg leading-tight text-center truncate w-full">{project.name}</h1>
+               <div className="flex items-center gap-2 text-[10px] font-bold text-[#87A237] uppercase tracking-widest mt-1">
+                  <span className="shrink-0">NCM: {project.siteId.split('-').pop()}</span>
+                  <span className="w-1 h-1 rounded-full bg-white/30" />
+                  <span className="truncate max-w-[100px]">Tech: {currentUser.name}</span>
+               </div>
+            </div>
+            <button 
+              onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
+              className="p-2 bg-white/10 rounded-xl hover:bg-white/20 active:scale-95 transition-all text-slate-300"
+            > 
+              {isHeaderExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </button>
           </div>
-          <button 
-            onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
-            className="p-2 bg-white/10 rounded-xl hover:bg-white/20 active:scale-95 transition-all text-slate-300"
-          > 
-            {isHeaderExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-          </button>
-        </div>
 
-        {/* Collapsible Section */}
-        <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isHeaderExpanded ? 'max-h-[500px] opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}`}>
-            {/* Compact Key Contacts Row */}
-            <div className="flex gap-2 mb-4 bg-white/5 p-2 rounded-xl border border-white/5 overflow-x-auto scrollbar-hide">
-                {[
-                    { role: 'PM', ...pm }, 
-                    { role: 'LEAD', ...techLead }, 
-                    { role: 'IT', ...it }
-                ].map((c, i) => (
-                    <div key={i} className="flex-1 min-w-[100px] flex flex-col justify-center px-3 border-r border-white/10 last:border-0">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{c.role}</p>
-                        <p className="text-[10px] font-bold text-white truncate">{c.name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                            {c.mobile && (
-                                <a href={`tel:${c.mobile}`} className="text-slate-400 hover:text-[#87A237]" title={c.mobile}>
-                                    <Phone size={10} />
-                                </a>
-                            )}
-                            {c.email && (
-                                <a href={`mailto:${c.email}`} className="text-slate-400 hover:text-[#87A237]" title={c.email}>
-                                    <Mail size={10} />
-                                </a>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
+          {/* Collapsible Section */}
+          <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isHeaderExpanded ? 'max-h-[500px] opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}`}>
+              {/* Compact Key Contacts Row */}
+              <div className="flex gap-2 mb-4 bg-white/5 p-2 rounded-xl border border-white/5 overflow-x-auto scrollbar-hide">
+                  {[
+                      { role: 'PM', ...pm }, 
+                      { role: 'LEAD', ...techLead }, 
+                      { role: 'IT', ...it }
+                  ].map((c, i) => (
+                      <div key={i} className="flex-1 min-w-[100px] flex flex-col justify-center px-3 border-r border-white/10 last:border-0">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{c.role}</p>
+                          <p className="text-[10px] font-bold text-white truncate">{c.name}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                              {c.mobile && (
+                                  <a href={`tel:${c.mobile}`} className="text-slate-400 hover:text-[#87A237]" title={c.mobile}>
+                                      <Phone size={10} />
+                                  </a>
+                              )}
+                              {c.email && (
+                                  <a href={`mailto:${c.email}`} className="text-slate-400 hover:text-[#87A237]" title={c.email}>
+                                      <Mail size={10} />
+                                  </a>
+                              )}
+                          </div>
+                      </div>
+                  ))}
+              </div>
 
-            {/* Enhanced Progress Bar */}
-            <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/5 space-y-4">
-            <div>
-                <div className="flex justify-between items-end mb-2">
-                    <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">Overall Completion</span>
-                    <span className="text-2xl font-black text-[#87A237]">{Math.round((stats.completed / stats.total) * 100)}%</span>
-                </div>
-                <div className="h-3 bg-black/30 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#87A237] transition-all duration-1000" style={{ width: `${(stats.completed / stats.total) * 100}%` }} />
-                </div>
-                <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
-                    <span>{stats.completed} Rooms Done</span>
-                    <span>{stats.total} Total</span>
-                </div>
-            </div>
+              {/* Enhanced Progress Bar */}
+              <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/5 space-y-4">
+              <div>
+                  <div className="flex justify-between items-end mb-2">
+                      <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">Overall Completion</span>
+                      <span className="text-2xl font-black text-[#87A237]">{Math.round((stats.completed / stats.total) * 100)}%</span>
+                  </div>
+                  <div className="h-3 bg-black/30 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#87A237] transition-all duration-1000" style={{ width: `${(stats.completed / stats.total) * 100}%` }} />
+                  </div>
+                  <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
+                      <span>{stats.completed} Rooms Done</span>
+                      <span>{stats.total} Total</span>
+                  </div>
+              </div>
 
-            {/* Module Breakdown Bars */}
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
-                {Object.entries(stats.moduleBreakdown).map(([mod, data]) => {
-                    if (data.total === 0) return null;
-                    const pct = Math.round((data.done / data.total) * 100);
-                    let color = 'bg-slate-400';
-                    let icon = null;
-                    if (mod === 'TV') { color = 'bg-blue-500'; icon = <Tv size={10} />; }
-                    if (mod === 'WIFI') { color = 'bg-amber-500'; icon = <Wifi size={10} />; }
-                    if (mod === 'CAST') { color = 'bg-emerald-500'; icon = <Share2 size={10} />; }
-                    if (mod === 'VOICE') { color = 'bg-purple-500'; icon = <Phone size={10} />; }
+              {/* Module Breakdown Bars */}
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
+                  {Object.entries(stats.moduleBreakdown).map(([mod, data]) => {
+                      if (data.total === 0 && mod !== 'TV') return null; // Show at least one
+                      if (data.total === 0) return null;
+                      
+                      const pct = Math.round((data.done / data.total) * 100);
+                      let color = 'bg-slate-400';
+                      let icon = null;
+                      if (mod === 'TV') { color = 'bg-blue-500'; icon = <Tv size={10} />; }
+                      if (mod === 'WIFI') { color = 'bg-amber-500'; icon = <Wifi size={10} />; }
+                      if (mod === 'CAST') { color = 'bg-emerald-500'; icon = <Share2 size={10} />; }
+                      if (mod === 'VOICE') { color = 'bg-purple-500'; icon = <Phone size={10} />; }
+                      if (mod === 'WEBAPP') { color = 'bg-pink-500'; icon = <Globe size={10} />; }
 
-                    return (
-                        <div key={mod} className="bg-black/20 p-2 rounded-lg">
-                            <div className="flex justify-between text-[9px] font-bold text-slate-300 mb-1">
-                                <span className="flex items-center gap-1">{icon} {mod}</span>
-                                <span>{pct}%</span>
-                            </div>
-                            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                <div className={`h-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-            </div>
-        </div>
-      </header>
+                      return (
+                          <div key={mod} className="bg-black/20 p-2 rounded-lg">
+                              <div className="flex justify-between text-[9px] font-bold text-slate-300 mb-1">
+                                  <span className="flex items-center gap-1">{icon} {mod}</span>
+                                  <span>{pct}%</span>
+                              </div>
+                              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                  <div className={`h-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+                              </div>
+                          </div>
+                      );
+                  })}
+              </div>
+              </div>
+          </div>
+        </header>
 
-      {/* Filters */}
-      <div className={`px-6 py-6 overflow-x-auto whitespace-nowrap scrollbar-hide flex gap-3 sticky z-10 bg-[#F3F4F6]/95 backdrop-blur-sm transition-all duration-300 ${isHeaderExpanded ? 'top-[400px]' : 'top-[90px]'}`}>
-         <button 
-           onClick={() => setFilterStatus('All')} 
-           className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${filterStatus === 'All' ? 'bg-[#171844] text-white' : 'bg-white text-slate-500'}`}
-         >
-           All
-         </button>
-         <button 
-           onClick={() => setFilterStatus('Issue')} 
-           className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 ${filterStatus === 'Issue' ? 'bg-red-500 text-white' : 'bg-white text-slate-500'}`}
-         >
-           <AlertCircle size={14} /> Issues / Warnings
-         </button>
-         <div className="w-[1px] h-8 bg-slate-300 mx-2" />
-         {floors.map(f => (
-           <button
-             key={f}
-             onClick={() => setFilterFloor(filterFloor === f ? 'All' : f)}
-             className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm border ${filterFloor === f ? 'bg-[#0070C0] text-white border-[#0070C0]' : 'bg-white text-slate-500 border-slate-200'}`}
+        {/* Filters */}
+        <div className="px-6 py-4 overflow-x-auto whitespace-nowrap scrollbar-hide flex gap-3">
+           <button 
+             onClick={() => setFilterStatus('All')} 
+             className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${filterStatus === 'All' ? 'bg-[#171844] text-white' : 'bg-white text-slate-500'}`}
            >
-             Floor {f}
+             All
            </button>
-         ))}
+           <button 
+             onClick={() => setFilterStatus('Issue')} 
+             className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 ${filterStatus === 'Issue' ? 'bg-red-500 text-white' : 'bg-white text-slate-500'}`}
+           >
+             <AlertCircle size={14} /> Issues
+           </button>
+           <div className="w-[1px] h-8 bg-slate-300 mx-2" />
+           {floors.map(f => (
+             <button
+               key={f}
+               onClick={() => setFilterFloor(filterFloor === f ? 'All' : f)}
+               className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm border ${filterFloor === f ? 'bg-[#0070C0] text-white border-[#0070C0]' : 'bg-white text-slate-500 border-slate-200'}`}
+             >
+               Floor {f}
+             </button>
+           ))}
+        </div>
       </div>
 
       {/* Room Grid */}
@@ -371,7 +388,7 @@ const InstallerDashboard: React.FC = () => {
           } else if (room.status === 'Warning') {
             statusColor = 'bg-orange-50 border-orange-400 shadow-orange-100'; 
             icon = <AlertTriangle className="text-orange-500" size={24} />;
-            statusText = 'DONE (WARN)';
+            statusText = 'WARN';
           } else if (room.status === 'Issue') {
             statusColor = 'bg-red-100 border-red-500 shadow-red-100'; 
             icon = <Ban className="text-red-600" size={24} />;
@@ -392,6 +409,7 @@ const InstallerDashboard: React.FC = () => {
           const hasAp = room.devices.some(d => d.model.includes('AP') || d.notes?.includes('Type:AP'));
           const hasCast = room.devices.some(d => d.name.includes('Cast') || d.notes?.includes('Type:CAST'));
           const hasVoice = room.devices.some(d => d.name.includes('Phone') || d.notes?.includes('Type:VOICE'));
+          const hasWebapp = room.devices.some(d => d.notes?.includes('Type:WEBAPP'));
 
           return (
             <button
@@ -420,7 +438,7 @@ const InstallerDashboard: React.FC = () => {
               
               {/* Module Indicators (Only for Guest Rooms) */}
               {room.type === 'GUEST' && (
-                <div className="flex gap-1.5 justify-center w-full">
+                <div className="flex gap-1.5 justify-center w-full flex-wrap">
                    {project.selectedModules.includes(ModuleType.TV) && (
                       <div className={`w-2 h-2 rounded-full ${hasTv ? 'bg-blue-500' : 'bg-slate-300/50'}`} />
                    )}
@@ -432,6 +450,9 @@ const InstallerDashboard: React.FC = () => {
                    )}
                    {project.selectedModules.includes(ModuleType.VOICE) && (
                       <div className={`w-2 h-2 rounded-full ${hasVoice ? 'bg-purple-500' : 'bg-slate-300/50'}`} />
+                   )}
+                   {project.selectedModules.includes(ModuleType.WEBAPP) && (
+                      <div className={`w-2 h-2 rounded-full ${hasWebapp ? 'bg-pink-500' : 'bg-slate-300/50'}`} />
                    )}
                 </div>
               )}

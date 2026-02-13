@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Device, Project, ModuleType, AccessPoint } from '../../types';
 import { useProjects } from '../../contexts/ProjectContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { X, Tv, Wifi, Smartphone, MonitorPlay, Share2, CheckCircle2, AlertTriangle, Save, Camera, ChevronDown, ChevronUp, AlertCircle, ListChecks, ArrowRight, Ban, ZapOff, MonitorOff, Phone, Plus } from 'lucide-react';
+import { X, Tv, Wifi, Smartphone, MonitorPlay, Share2, CheckCircle2, AlertTriangle, Save, Camera, ChevronDown, ChevronUp, AlertCircle, ListChecks, ArrowRight, Ban, ZapOff, MonitorOff, Phone, Plus, Globe } from 'lucide-react';
 import BarcodeScanner from '../BarcodeScanner';
 
 interface RoomSummary {
@@ -51,6 +51,10 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
 
     if (project.selectedModules.includes(ModuleType.VOICE)) {
         newDevices.push({ id: `new-phone-${Date.now()}`, name: 'Nonius Voice (Phone)', brand: 'Mitel', model: '6920', macAddress: '', serialNumber: '', room: roomData.room, installed: false, ipAddress: '', notes: '[Type:VOICE]' });
+    }
+
+    if (project.selectedModules.includes(ModuleType.WEBAPP)) {
+        newDevices.push({ id: `new-webapp-${Date.now()}`, name: 'Guest Webapp Test', brand: 'Virtual', model: 'Web Portal', macAddress: 'N/A', serialNumber: 'N/A', room: roomData.room, installed: false, ipAddress: 'N/A', notes: '[Type:WEBAPP]' });
     }
 
     return newDevices;
@@ -123,7 +127,6 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
     const newTvConfig = project.tvConfig ? { ...project.tvConfig } : undefined;
     const newWifiConfig = project.wifiConfig ? { ...project.wifiConfig } : undefined;
     const newCastConfig = project.castConfig ? { ...project.castConfig } : undefined;
-    // For Voice, since typed as any, we handle initialization carefully
     const newVoiceConfig = project.voiceConfig ? { ...project.voiceConfig } : { inventory: [] };
     if (!newVoiceConfig.inventory) newVoiceConfig.inventory = [];
 
@@ -159,7 +162,8 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
       };
 
       // --- SYNC TO TV INVENTORY ---
-      if (localDev.notes?.includes('Type:TV') || localDev.name.includes('TV')) {
+      // Webapp checks are stored in TV inventory for now if no dedicated place, or just tracked in notes
+      if (localDev.notes?.includes('Type:TV') || localDev.name.includes('TV') || localDev.notes?.includes('Type:WEBAPP')) {
         if (newTvConfig) {
             // Check if device already exists in inventory by ID
             const idx = newTvConfig.inventory.findIndex(d => d.id === localDev.id);
@@ -172,7 +176,7 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
                 newTvConfig.inventory[idx] = tvPayload;
             } else {
                 // If it was a 'new-tv' ID generated locally, check if there is a placeholder for this room that is uninstalled
-                const placeholderIdx = newTvConfig.inventory.findIndex(d => d.room === localDev.room && !d.installed);
+                const placeholderIdx = newTvConfig.inventory.findIndex(d => d.room === localDev.room && !d.installed && (d.notes?.includes(localDev.notes?.includes('WEBAPP') ? 'WEBAPP' : 'TV') || true));
                 if (placeholderIdx > -1 && localDev.id.startsWith('new-')) {
                      // Overwrite the placeholder
                      newTvConfig.inventory[placeholderIdx] = { ...tvPayload, id: newTvConfig.inventory[placeholderIdx].id };
@@ -188,14 +192,13 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
         if (newWifiConfig) {
            const idx = newWifiConfig.inventory.findIndex(d => d.id === localDev.id);
            
-           // AccessPoint type is different from Device type
            const apPayload: AccessPoint = {
                id: idx > -1 ? newWifiConfig.inventory[idx].id : localDev.id,
                name: localDev.name, 
                location: localDev.room, 
                brand: localDev.brand,
-               mac: localDev.macAddress, // Map wizard macAddress to AP mac
-               ip: localDev.ipAddress,   // Map wizard ipAddress to AP ip
+               mac: localDev.macAddress, 
+               ip: localDev.ipAddress, 
                switchPort: idx > -1 ? newWifiConfig.inventory[idx].switchPort : '', 
                vlanMgmt: '1', 
                vlanHotspot: '10', 
@@ -209,7 +212,6 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
            if (idx > -1) {
                newWifiConfig.inventory[idx] = apPayload;
            } else {
-               // Check for placeholder match
                const placeholderIdx = newWifiConfig.inventory.findIndex(d => d.location === localDev.room && !d.installed);
                if (placeholderIdx > -1 && localDev.id.startsWith('new-')) {
                    newWifiConfig.inventory[placeholderIdx] = { ...apPayload, id: newWifiConfig.inventory[placeholderIdx].id };
@@ -303,20 +305,18 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
       if (type === 'WIFI') return devices.filter(d => d.name.includes('Access Point') || d.notes?.includes('Type:WIFI'));
       if (type === 'CAST') return devices.filter(d => d.name.includes('Cast') || d.name.includes('Dongle') || d.notes?.includes('Type:CAST'));
       if (type === 'VOICE') return devices.filter(d => d.name.includes('Phone') || d.notes?.includes('Type:VOICE'));
+      if (type === 'WEBAPP') return devices.filter(d => d.notes?.includes('Type:WEBAPP'));
       return [];
   };
 
   const renderDeviceSection = (title: string, type: string, icon: React.ReactNode, colorClass: string, checklist: string[]) => {
       const sectionDevices = getDevicesByType(type);
       
-      // Allow section to render even if empty so we can add devices? 
-      // Current UX: Only render if module active. If module active but no devices, should show "Add".
-      
       return (
         <div className="bg-white rounded-[2rem] shadow-sm overflow-hidden border border-slate-200">
             <button 
               onClick={() => setExpandedSection(expandedSection === type ? null : type)}
-              className="w-full p-6 flex items-center justify-between bg-slate-50 border-b border-slate-100"
+              className="w-full p-4 md:p-6 flex items-center justify-between bg-slate-50 border-b border-slate-100"
             >
               <div className="flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass}`}>
@@ -331,7 +331,7 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
             </button>
             
             {expandedSection === type && (
-              <div className="p-6 space-y-8 animate-in slide-in-from-top-2 duration-300">
+              <div className="p-4 md:p-6 space-y-8 animate-in slide-in-from-top-2 duration-300">
                 {sectionDevices.map(dev => {
                   const devIssues = deviceIssues[dev.id] || new Set();
                   
@@ -358,52 +358,54 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
                         </div>
                     </div>
 
-                    {/* Data Inputs */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <div className="space-y-1">
-                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">MAC Address</label>
-                            <div className="flex gap-2">
+                    {/* Data Inputs - Hide for Webapp since it's virtual */}
+                    {type !== 'WEBAPP' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">MAC Address</label>
+                                <div className="flex gap-2">
+                                    <input 
+                                        value={dev.macAddress}
+                                        onChange={e => updateDevice(dev.id, { macAddress: e.target.value })}
+                                        className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg font-mono text-sm outline-none focus:ring-1 focus:ring-[#0070C0]"
+                                        placeholder="00:00:00..."
+                                    />
+                                    <button 
+                                        onClick={() => setScannerTarget({ id: dev.id, field: 'macAddress' })}
+                                        className="p-2 bg-[#171844] text-white rounded-lg active:scale-95 transition-transform"
+                                    >
+                                        <Camera size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Serial Number</label>
+                                <div className="flex gap-2">
+                                    <input 
+                                        value={dev.serialNumber}
+                                        onChange={e => updateDevice(dev.id, { serialNumber: e.target.value })}
+                                        className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg font-mono text-sm outline-none focus:ring-1 focus:ring-[#0070C0]"
+                                        placeholder="SN..."
+                                    />
+                                    <button 
+                                        onClick={() => setScannerTarget({ id: dev.id, field: 'serialNumber' })}
+                                        className="p-2 bg-[#171844] text-white rounded-lg active:scale-95 transition-transform"
+                                    >
+                                        <Camera size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="space-y-1 md:col-span-2">
+                                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">IP Address</label>
                                 <input 
-                                    value={dev.macAddress}
-                                    onChange={e => updateDevice(dev.id, { macAddress: e.target.value })}
-                                    className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg font-mono text-sm outline-none focus:ring-1 focus:ring-[#0070C0]"
-                                    placeholder="00:00:00..."
+                                    value={dev.ipAddress}
+                                    onChange={e => updateDevice(dev.id, { ipAddress: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-mono text-sm outline-none focus:ring-1 focus:ring-[#0070C0]"
+                                    placeholder="DHCP / Static IP"
                                 />
-                                <button 
-                                    onClick={() => setScannerTarget({ id: dev.id, field: 'macAddress' })}
-                                    className="p-2 bg-[#171844] text-white rounded-lg active:scale-95 transition-transform"
-                                >
-                                    <Camera size={16} />
-                                </button>
                             </div>
                         </div>
-                        <div className="space-y-1">
-                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Serial Number</label>
-                            <div className="flex gap-2">
-                                <input 
-                                    value={dev.serialNumber}
-                                    onChange={e => updateDevice(dev.id, { serialNumber: e.target.value })}
-                                    className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg font-mono text-sm outline-none focus:ring-1 focus:ring-[#0070C0]"
-                                    placeholder="SN..."
-                                />
-                                <button 
-                                    onClick={() => setScannerTarget({ id: dev.id, field: 'serialNumber' })}
-                                    className="p-2 bg-[#171844] text-white rounded-lg active:scale-95 transition-transform"
-                                >
-                                    <Camera size={16} />
-                                </button>
-                            </div>
-                        </div>
-                        <div className="space-y-1 md:col-span-2">
-                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">IP Address</label>
-                            <input 
-                                value={dev.ipAddress}
-                                onChange={e => updateDevice(dev.id, { ipAddress: e.target.value })}
-                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-mono text-sm outline-none focus:ring-1 focus:ring-[#0070C0]"
-                                placeholder="DHCP / Static IP"
-                            />
-                        </div>
-                    </div>
+                    )}
 
                     {/* QA Checklist */}
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
@@ -445,7 +447,7 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
                                     {issue}
                                 </button>
                             ))}
-                            {['No Signal', 'Hardware Missing', 'Damaged', 'Wrong Mount'].map(issue => (
+                            {['No Signal', 'Hardware Missing', 'Damaged', 'Wrong Mount', 'QR Code Missing'].map(issue => (
                                 <button
                                     key={issue}
                                     onClick={() => toggleIssue(dev.id, issue)}
@@ -464,12 +466,14 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
                 )})}
                 
                 {/* Add Device Button */}
-                <button 
-                    onClick={() => addExtraDevice(type)}
-                    className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center gap-2 text-slate-400 hover:text-[#0070C0] hover:border-[#0070C0] hover:bg-blue-50 transition-all font-bold text-xs uppercase tracking-widest"
-                >
-                    <Plus size={16} /> Add Another {type}
-                </button>
+                {type !== 'WEBAPP' && (
+                    <button 
+                        onClick={() => addExtraDevice(type)}
+                        className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center gap-2 text-slate-400 hover:text-[#0070C0] hover:border-[#0070C0] hover:bg-blue-50 transition-all font-bold text-xs uppercase tracking-widest"
+                    >
+                        <Plus size={16} /> Add Another {type}
+                    </button>
+                )}
               </div>
             )}
         </div>
@@ -525,7 +529,7 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
       )}
 
       {/* Header */}
-      <div className="bg-white p-6 shadow-sm flex items-center justify-between shrink-0">
+      <div className="bg-white p-6 shadow-sm flex items-center justify-between shrink-0 sticky top-0 z-40">
         <div>
           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Installation Wizard</span>
           <h2 className="text-3xl font-black text-[#171844] flex items-center gap-3">
@@ -539,7 +543,7 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
         
         {project.selectedModules.includes(ModuleType.TV) && 
             renderDeviceSection('TV System (NTV+)', 'TV', <Tv size={20} />, 'bg-blue-100 text-[#0070C0]', 
@@ -563,6 +567,10 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
         {project.selectedModules.includes(ModuleType.VOICE) && 
             renderDeviceSection('Voice / Phone', 'VOICE', <Phone size={20} />, 'bg-purple-100 text-purple-600',
             ['Dial Tone Present', 'Call Reception Verified', 'Extension Labelled'])}
+
+        {project.selectedModules.includes(ModuleType.WEBAPP) && 
+            renderDeviceSection('Guest Webapp', 'WEBAPP', <Globe size={20} />, 'bg-pink-100 text-pink-600',
+            ['QR Code Scans Correctly', 'Redirects to Correct URL', 'Landing Page Loads < 3s', 'Welcome Message Correct'])}
 
       </div>
 
