@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { LayoutGrid, Server, Shield, Network, Settings, CircleCheck, ListChecks, Smartphone, Trash2, Plus, Info, Lock, Radio } from 'lucide-react';
+import { LayoutGrid, Server, Shield, Network, Settings, CircleCheck, ListChecks, Smartphone, Trash2, Plus, Info, Lock, Radio, Wand2 } from 'lucide-react';
 import { Project, TvModuleConfig, DeploymentStatus, Device, UserRole, TvStreamer, TvOttStream } from '../types';
 import { IP_REGEX, HARDWARE_MODELS } from '../constants';
 import StreamerHeadend from './StreamerHeadend';
@@ -44,10 +44,8 @@ const TvConfiguration: React.FC<TvConfigurationProps> = ({ project, onUpdate, ro
     if (isViewOnly) return;
     const newConfig = { ...config };
     if (field in newConfig.infrastructure.network) {
-      // Fix: Cast field to any for dynamic indexing into infrastructure sub-objects
       (newConfig.infrastructure.network as any)[field] = value;
     } else {
-      // Fix: Cast field to any for dynamic indexing into infrastructure sub-objects
       (newConfig.infrastructure as any)[field] = value;
     }
     onUpdate(newConfig);
@@ -75,6 +73,47 @@ const TvConfiguration: React.FC<TvConfigurationProps> = ({ project, onUpdate, ro
   const handleUpdateOtt = (newOtt: TvOttStream[]) => {
     if (isViewOnly) return;
     onUpdate({ ...config, ottStreams: newOtt });
+  };
+
+  const handleBulkGenerate = () => {
+    if (isViewOnly) return;
+    if (!window.confirm("This will generate TV devices for all rooms defined in the Floor Plan configuration. Existing devices will be kept. Continue?")) return;
+
+    const newInventory = [...config.inventory];
+    const existingRooms = new Set(newInventory.map(d => d.room));
+    
+    const generate = (room: string) => {
+        if (existingRooms.has(room)) return;
+        newInventory.push({
+            id: `tv-${room}-${Date.now()}`,
+            name: `TV ${room}`,
+            brand: 'Samsung',
+            model: 'HG Series',
+            macAddress: '',
+            serialNumber: '',
+            room: room,
+            ipAddress: '',
+            installed: false,
+            notes: '[Type:TV]'
+        });
+    };
+
+    if (project.floorPlanConfig && project.floorPlanConfig.totalFloors > 0) {
+        const { totalFloors, roomsPerFloor, startingRoomNumber } = project.floorPlanConfig;
+        for (let f = 0; f < totalFloors; f++) {
+            const floorStart = startingRoomNumber + (f * 100);
+            for (let r = 0; r < roomsPerFloor; r++) {
+                generate((floorStart + r).toString());
+            }
+        }
+    } else {
+        // Fallback to simple 1..N
+        for (let i = 0; i < (project.rooms || 0); i++) {
+            generate((101 + i).toString());
+        }
+    }
+
+    onUpdate({ ...config, inventory: newInventory.sort((a,b) => a.room.localeCompare(b.room, undefined, {numeric: true})) });
   };
 
   const validateIp = (ip: string) => IP_REGEX.test(ip);
@@ -162,7 +201,6 @@ const TvConfiguration: React.FC<TvConfigurationProps> = ({ project, onUpdate, ro
               Management Network (eth0)
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              {/* Fix: Added explicit casting of keys to string to prevent type errors in loop */}
               {(Object.keys(config.infrastructure.network) as Array<keyof typeof config.infrastructure.network>).map(key => (
                 <div key={key as string} className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{key as string}</label>
@@ -226,7 +264,7 @@ const TvConfiguration: React.FC<TvConfigurationProps> = ({ project, onUpdate, ro
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">OS Management Pass</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">OS Management Pass</label>
                 <input 
                   disabled={isViewOnly}
                   type="password"
@@ -300,18 +338,26 @@ const TvConfiguration: React.FC<TvConfigurationProps> = ({ project, onUpdate, ro
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold text-[#171844]">Endpoint Inventory</h3>
             {!isViewOnly && (
-              <button 
-                onClick={() => {
-                  const newDev: Device = {
-                    id: Math.random().toString(), name: 'Room TV', brand: 'Samsung', model: '',
-                    macAddress: '', serialNumber: '', room: '', ipAddress: '', installed: false
-                  };
-                  onUpdate({ ...config, inventory: [newDev, ...config.inventory] });
-                }}
-                className="px-6 py-2 bg-[#171844] text-white rounded-xl text-xs font-bold flex items-center gap-2"
-              >
-                <Plus size={16} /> Add Endpoint
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleBulkGenerate}
+                  className="px-6 py-2 bg-white border border-slate-200 text-[#171844] rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-50"
+                >
+                  <Wand2 size={16} /> Bulk Generate from Rooms
+                </button>
+                <button 
+                  onClick={() => {
+                    const newDev: Device = {
+                      id: Math.random().toString(), name: 'Room TV', brand: 'Samsung', model: '',
+                      macAddress: '', serialNumber: '', room: '', ipAddress: '', installed: false
+                    };
+                    onUpdate({ ...config, inventory: [newDev, ...config.inventory] });
+                  }}
+                  className="px-6 py-2 bg-[#171844] text-white rounded-xl text-xs font-bold flex items-center gap-2"
+                >
+                  <Plus size={16} /> Add Single TV
+                </button>
+              </div>
             )}
           </div>
           

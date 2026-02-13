@@ -23,6 +23,7 @@ export enum DocumentCategory {
   QA_CHECKLIST = 'QA Checklist',
   CONTRACT = 'Contract',
   TECHNICAL_SPEC = 'Technical Spec',
+  FLOOR_PLAN = 'Floor Plan',
   OTHER = 'Other'
 }
 
@@ -330,6 +331,7 @@ export interface WifiApGroup {
   id: string;
   name: string;
   zoneId: string;
+  notes?: string;
 }
 
 export interface WifiSsid {
@@ -449,6 +451,12 @@ export interface SiteActivity {
   isError?: boolean;
 }
 
+export interface FloorPlanConfig {
+  totalFloors: number;
+  roomsPerFloor: number;
+  startingRoomNumber: number;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -467,6 +475,7 @@ export interface Project {
     address: string;
     website: string;
   };
+  floorPlanConfig?: FloorPlanConfig;
   contacts: ProjectContact[];
   tvConfig?: TvModuleConfig;
   castConfig?: CastModuleConfig;

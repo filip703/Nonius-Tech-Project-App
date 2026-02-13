@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   Hotel, MapPin, Hash, User, ChevronRight, Check, Tv, Share2, 
   Phone, Wifi, MonitorPlay, Server, ShieldCheck, Network, 
-  Mail, Users, UserPlus, Trash2, Briefcase, Wrench, ShieldAlert, Building2, Globe, Smartphone, HardHat
+  Mail, Users, UserPlus, Trash2, Briefcase, Wrench, ShieldAlert, Building2, Globe, Smartphone, HardHat, Layers
 } from 'lucide-react';
 import { ModuleType, Project, ProjectContact } from '../types';
 import { NoniusLogo } from '../App';
@@ -33,6 +33,11 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
     siteId: '',
     address: '',
     rooms: 0,
+    // Floor plan config
+    floors: 1,
+    roomsPerFloor: 0,
+    startRoom: 101,
+    // Personnel
     pmName: '',
     pmEmail: '',
     pmPhone: '',
@@ -124,6 +129,11 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
         address: siteData.address,
         website: ''
       },
+      floorPlanConfig: {
+        totalFloors: siteData.floors,
+        roomsPerFloor: siteData.roomsPerFloor,
+        startingRoomNumber: siteData.startRoom
+      },
       contacts,
       documents: []
     };
@@ -137,12 +147,12 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
   ];
 
   return (
-    <div className="fixed inset-0 bg-[#171844]/90 backdrop-blur-xl z-[100] flex items-center justify-center p-0 md:p-8 overflow-y-auto">
-      <div className="bg-white w-full max-w-6xl md:h-[90vh] rounded-none md:rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row overflow-hidden min-h-screen md:min-h-0 animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 bg-[#171844]/90 backdrop-blur-xl z-[100] flex items-center justify-center p-0 md:p-8">
+      <div className="bg-white w-full max-w-6xl h-full md:h-[90vh] rounded-none md:rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-300">
         
         {/* SIDEBAR - TOP ON MOBILE */}
-        <div className="w-full md:w-80 lg:w-96 bg-[#171844] p-8 md:p-12 text-white flex flex-col shrink-0 border-b md:border-b-0 md:border-r border-white/5">
-          <div className="mb-8 md:mb-16 flex justify-between items-center md:block">
+        <div className="w-full md:w-80 lg:w-96 bg-[#171844] p-6 md:p-12 text-white flex flex-col shrink-0 border-b md:border-b-0 md:border-r border-white/5">
+          <div className="mb-6 md:mb-16 flex justify-between items-center md:block">
             <div className="flex items-center gap-4">
               <NoniusLogo className="w-10 h-10 md:w-12 md:h-12" />
               <div>
@@ -153,9 +163,9 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
             <button onClick={onCancel} className="md:hidden text-slate-400 p-2"><Trash2 size={20}/></button>
           </div>
 
-          <div className="flex flex-row md:flex-col justify-between md:justify-center md:space-y-12 mb-8 md:mb-0">
+          <div className="flex flex-row md:flex-col justify-between md:justify-center md:space-y-12 mb-2 md:mb-0 overflow-x-auto md:overflow-visible pb-2 md:pb-0 scrollbar-hide">
             {steps.map((s, idx) => (
-              <div key={s.id} className="relative flex flex-col md:flex-row items-center md:items-start gap-2 md:gap-6 group">
+              <div key={s.id} className="relative flex flex-col md:flex-row items-center md:items-start gap-2 md:gap-6 group min-w-[80px] md:min-w-0">
                 <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-black text-[10px] md:text-xs transition-all duration-300 border-2 ${
                   step === s.id 
                     ? 'bg-[#87A237] border-[#87A237] text-white shadow-lg' 
@@ -165,9 +175,9 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
                 }`}>
                   {step > s.id ? <Check size={16} /> : s.id}
                 </div>
-                <div className="text-center md:text-left hidden md:block">
-                  <h3 className={`font-black text-xs tracking-widest ${step === s.id ? 'text-white' : 'text-white/40'}`}>{s.label}</h3>
-                  <p className={`text-[10px] font-medium mt-1 ${step === s.id ? 'text-slate-400' : 'text-white/20'}`}>{s.desc}</p>
+                <div className="text-center md:text-left">
+                  <h3 className={`font-black text-[10px] md:text-xs tracking-widest ${step === s.id ? 'text-white' : 'text-white/40'}`}>{s.label}</h3>
+                  <p className={`hidden md:block text-[10px] font-medium mt-1 ${step === s.id ? 'text-slate-400' : 'text-white/20'}`}>{s.desc}</p>
                 </div>
               </div>
             ))}
@@ -185,7 +195,7 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
 
         {/* MAIN CONTENT AREA */}
         <div className="flex-1 bg-[#F3F4F6] flex flex-col overflow-hidden relative">
-          <div className="flex-1 overflow-y-auto p-6 md:p-16">
+          <div className="flex-1 overflow-y-auto p-4 md:p-16 pb-24 md:pb-16 scrollbar-hide">
             
             {/* STEP 1 */}
             {step === 1 && (
@@ -213,15 +223,6 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
                         placeholder="DE-BER-01"
                       />
                     </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Room Count</label>
-                      <input 
-                        type="number"
-                        className="w-full px-4 md:px-5 py-3 md:py-4 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0] font-bold"
-                        value={siteData.rooms}
-                        onChange={e => setSiteData({...siteData, rooms: parseInt(e.target.value) || 0})}
-                      />
-                    </div>
                     <div className="md:col-span-2 space-y-1">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Address</label>
                       <input 
@@ -229,6 +230,53 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
                         value={siteData.address}
                         onChange={e => setSiteData({...siteData, address: e.target.value})}
                       />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-sm border border-slate-200">
+                  <h2 className="text-lg md:text-xl font-black text-[#171844] mb-6 flex items-center gap-2">
+                    <Layers className="text-[#87A237]" size={20} /> Floor Plan Configuration
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Total Rooms</label>
+                      <input 
+                        type="number"
+                        className="w-full px-4 md:px-5 py-3 md:py-4 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0] font-bold"
+                        value={siteData.rooms}
+                        onChange={e => setSiteData({...siteData, rooms: parseInt(e.target.value) || 0})}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Total Floors</label>
+                      <input 
+                        type="number"
+                        className="w-full px-4 md:px-5 py-3 md:py-4 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0]"
+                        value={siteData.floors}
+                        onChange={e => setSiteData({...siteData, floors: parseInt(e.target.value) || 1})}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Rooms / Floor</label>
+                      <input 
+                        type="number"
+                        className="w-full px-4 md:px-5 py-3 md:py-4 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0]"
+                        value={siteData.roomsPerFloor}
+                        onChange={e => setSiteData({...siteData, roomsPerFloor: parseInt(e.target.value) || 0})}
+                        placeholder="Avg rooms per floor"
+                      />
+                    </div>
+                    <div className="md:col-span-3 space-y-1">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Starting Room Number</label>
+                      <input 
+                        type="number"
+                        className="w-full px-4 md:px-5 py-3 md:py-4 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl outline-none focus:ring-2 focus:ring-[#0070C0]"
+                        value={siteData.startRoom}
+                        onChange={e => setSiteData({...siteData, startRoom: parseInt(e.target.value) || 101})}
+                        placeholder="e.g. 101"
+                      />
+                      <p className="text-[10px] text-slate-400 italic ml-1">Dashboard will generate rooms sequentially per floor starting from this number (e.g. 101-120, 201-220...)</p>
                     </div>
                   </div>
                 </section>
@@ -378,7 +426,7 @@ const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({ onComplete, onC
           </div>
 
           {/* ACTION FOOTER */}
-          <div className="h-20 md:h-24 bg-white border-t border-slate-200 px-6 md:px-12 flex items-center justify-between shrink-0 sticky bottom-0">
+          <div className="h-20 md:h-24 bg-white border-t border-slate-200 px-6 md:px-12 flex items-center justify-between shrink-0 sticky bottom-0 z-50">
             <button 
               onClick={step === 1 ? onCancel : () => setStep(step - 1)}
               className="px-4 md:px-8 py-3 text-slate-400 font-black text-[10px] md:text-xs uppercase tracking-widest hover:text-[#171844]"

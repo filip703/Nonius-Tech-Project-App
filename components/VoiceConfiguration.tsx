@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Phone, Server, Network, Activity, Plus, Trash2, Cpu, FileCode, CheckSquare } from 'lucide-react';
-import { Project, UserRole } from '../types';
+import { Phone, Server, Network, Activity, Plus, Trash2, Cpu, FileCode, CheckSquare, Wand2 } from 'lucide-react';
+import { Project, UserRole, Device } from '../types';
 
 interface VoiceConfigurationProps {
   project: Project;
@@ -9,25 +9,67 @@ interface VoiceConfigurationProps {
   role: UserRole;
 }
 
-const VoiceConfiguration: React.FC<VoiceConfigurationProps> = ({ project, role }) => {
+const VoiceConfiguration: React.FC<VoiceConfigurationProps> = ({ project, onUpdate, role }) => {
   const [activeTab, setActiveTab] = useState<'licensing' | 'network' | 'ops' | 'gateway'>('licensing');
   const isViewOnly = role === UserRole.PROJECT_MANAGER;
 
-  const [licensing, setLicensing] = useState([
-    { id: 1, name: 'Cloud vs On-Prem', status: 'Live' },
-    { id: 2, name: 'Extensions (100+)', status: 'Pending' },
-    { id: 3, name: 'Call Recording', status: 'Pending' },
-    { id: 4, name: 'AI Receptionist', status: 'Canceled' },
-    { id: 5, name: 'Teams Integration', status: 'Live' },
-    { id: 6, name: 'Technician Training', status: 'Pending' },
-  ]);
+  // Ensure config structure
+  const config = project.voiceConfig || {
+      inventory: [],
+      gateways: { mac: '', ip: '', user: 'admin', pass: 'password123' },
+      licensing: [
+        { id: 1, name: 'Cloud vs On-Prem', status: 'Live' },
+        { id: 2, name: 'Extensions (100+)', status: 'Pending' },
+        { id: 3, name: 'Call Recording', status: 'Pending' },
+        { id: 4, name: 'AI Receptionist', status: 'Canceled' },
+        { id: 5, name: 'Teams Integration', status: 'Live' },
+        { id: 6, name: 'Technician Training', status: 'Pending' },
+      ]
+  };
 
-  const [gateways, setGateways] = useState({
-    mac: '00:0B:82:91:A2:BC',
-    ip: '10.50.10.25',
-    user: 'admin',
-    pass: 'password123'
-  });
+  const handleUpdate = (updates: any) => {
+      onUpdate({ ...config, ...updates });
+  };
+
+  const handleBulkGenerate = () => {
+    if (isViewOnly) return;
+    if (!window.confirm("This will generate IP Phones for all rooms based on Floor Plan. Existing phones will be kept. Continue?")) return;
+
+    const newInventory = [...(config.inventory || [])];
+    const existingRooms = new Set(newInventory.map((d: Device) => d.room));
+    
+    const generate = (room: string) => {
+        if (existingRooms.has(room)) return;
+        newInventory.push({
+            id: `phone-${room}-${Date.now()}`,
+            name: `IP Phone ${room}`,
+            brand: 'Mitel',
+            model: '6920',
+            macAddress: '',
+            serialNumber: '',
+            room: room,
+            ipAddress: '',
+            installed: false,
+            notes: '[Type:VOICE]'
+        });
+    };
+
+    if (project.floorPlanConfig && project.floorPlanConfig.totalFloors > 0) {
+        const { totalFloors, roomsPerFloor, startingRoomNumber } = project.floorPlanConfig;
+        for (let f = 0; f < totalFloors; f++) {
+            const floorStart = startingRoomNumber + (f * 100);
+            for (let r = 0; r < roomsPerFloor; r++) {
+                generate((floorStart + r).toString());
+            }
+        }
+    } else {
+        for (let i = 0; i < (project.rooms || 0); i++) {
+            generate((101 + i).toString());
+        }
+    }
+
+    handleUpdate({ inventory: newInventory.sort((a: Device, b: Device) => a.room.localeCompare(b.room, undefined, {numeric: true})) });
+  };
 
   const trunkTemplate = `host=192.168.191.253
 context=from-trunk
@@ -37,7 +79,7 @@ disallow=all
 allow=g729`;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       {/* Module Tabs */}
       <div className="flex p-1.5 bg-slate-200/50 rounded-2xl w-fit overflow-x-auto max-w-full">
         {[
@@ -64,16 +106,16 @@ allow=g729`;
             <CheckSquare size={20} className="text-[#87A237]" /> License Fulfillment Checklist
           </h3>
           <div className="space-y-4">
-            {licensing.map((item, idx) => (
+            {config.licensing?.map((item: any, idx: number) => (
               <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <span className="font-bold text-[#171844]">{item.name}</span>
                 <select
                   disabled={isViewOnly}
                   value={item.status}
                   onChange={(e) => {
-                    const next = [...licensing];
+                    const next = [...config.licensing];
                     next[idx].status = e.target.value;
-                    setLicensing(next);
+                    handleUpdate({ licensing: next });
                   }}
                   className={`px-4 py-1.5 rounded-lg text-xs font-bold border-none outline-none focus:ring-2 focus:ring-[#0070C0] ${
                     item.status === 'Live' ? 'bg-green-100 text-green-700' :
@@ -152,28 +194,83 @@ allow=g729`;
           <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-8 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
               <h3 className="font-bold text-[#171844] text-sm">Terminal Inventory (IP Phones)</h3>
-              {!isViewOnly && <button className="text-[#0070C0] font-bold text-xs">+ Add Terminal</button>}
+              {!isViewOnly && (
+                <div className="flex gap-2">
+                    <button 
+                        onClick={handleBulkGenerate}
+                        className="text-[#171844] font-bold text-xs flex items-center gap-1 hover:underline"
+                    >
+                        <Wand2 size={14} /> Bulk Generate
+                    </button>
+                    <button 
+                        onClick={() => {
+                            const newDev: Device = {
+                                id: `phone-${Date.now()}`,
+                                name: 'New Phone', brand: 'Mitel', model: '6920',
+                                macAddress: '', serialNumber: '', room: '', ipAddress: '', installed: false
+                            };
+                            handleUpdate({ inventory: [...(config.inventory || []), newDev] });
+                        }}
+                        className="text-[#0070C0] font-bold text-xs flex items-center gap-1 hover:underline"
+                    >
+                        <Plus size={14} /> Add Terminal
+                    </button>
+                </div>
+              )}
             </div>
             <table className="w-full text-left text-xs">
               <thead className="bg-[#171844] text-white uppercase tracking-widest text-[10px]">
                 <tr>
+                  <th className="px-6 py-4">Room</th>
                   <th className="px-6 py-4">Brand/Model</th>
-                  <th className="px-6 py-4">Location</th>
                   <th className="px-6 py-4">Extension</th>
-                  <th className="px-6 py-4">User / Pass</th>
+                  <th className="px-6 py-4">MAC</th>
+                  {!isViewOnly && <th className="px-6 py-4"></th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {['Reception 1', 'Bar Master', 'Spa Desk'].map(loc => (
-                  <tr key={loc}>
-                    <td className="px-6 py-3">Mitel 6920</td>
-                    <td className="px-6 py-3 font-bold">{loc}</td>
-                    <td className="px-6 py-3 text-[#0070C0] font-mono">10{Math.floor(Math.random()*90)}</td>
-                    <td className="px-6 py-3 text-slate-400">admin / *******</td>
+                {(config.inventory || []).map((dev: Device) => (
+                  <tr key={dev.id} className="hover:bg-slate-50/50">
+                    <td className="px-6 py-3 font-bold">{dev.room || '---'}</td>
+                    <td className="px-6 py-3">{dev.brand} {dev.model}</td>
+                    <td className="px-6 py-3 text-[#0070C0] font-mono">
+                        <input 
+                            disabled={isViewOnly}
+                            className="bg-transparent outline-none w-20" 
+                            placeholder="Ext..." 
+                            value={dev.serialNumber} // Using serialNumber field for Extension momentarily
+                            onChange={e => {
+                                const newInv = config.inventory.map((d: Device) => d.id === dev.id ? { ...d, serialNumber: e.target.value } : d);
+                                handleUpdate({ inventory: newInv });
+                            }}
+                        />
+                    </td>
+                    <td className="px-6 py-3 font-mono text-[10px]">
+                        <input 
+                            disabled={isViewOnly}
+                            className="bg-transparent outline-none w-32" 
+                            placeholder="MAC..." 
+                            value={dev.macAddress}
+                            onChange={e => {
+                                const newInv = config.inventory.map((d: Device) => d.id === dev.id ? { ...d, macAddress: e.target.value } : d);
+                                handleUpdate({ inventory: newInv });
+                            }}
+                        />
+                    </td>
+                    {!isViewOnly && (
+                        <td className="px-6 py-3 text-right">
+                            <button onClick={() => handleUpdate({ inventory: config.inventory.filter((d: Device) => d.id !== dev.id) })} className="text-slate-300 hover:text-red-500">
+                                <Trash2 size={14} />
+                            </button>
+                        </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
+            {(config.inventory || []).length === 0 && (
+               <div className="p-8 text-center text-slate-400 italic text-xs">No IP phones in inventory.</div>
+            )}
           </div>
         </div>
       )}
@@ -185,9 +282,9 @@ allow=g729`;
                <Cpu size={40} />
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 flex-1">
-               <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">MAC Address</label><p className="font-mono font-bold">{gateways.mac}</p></div>
-               <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Management IP</label><p className="font-mono font-bold text-[#0070C0]">{gateways.ip}</p></div>
-               <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Username</label><p className="font-bold">{gateways.user}</p></div>
+               <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">MAC Address</label><p className="font-mono font-bold">{config.gateways?.mac || '---'}</p></div>
+               <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Management IP</label><p className="font-mono font-bold text-[#0070C0]">{config.gateways?.ip || '0.0.0.0'}</p></div>
+               <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Username</label><p className="font-bold">{config.gateways?.user}</p></div>
                <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Password</label><p className="font-bold">••••••••</p></div>
             </div>
           </div>

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Network, Server, Shield, Lock, Radio, Plus, Trash2, Info, ChevronDown, CircleCheck, Monitor, Globe, Activity } from 'lucide-react';
+import { Network, Server, Shield, Lock, Radio, Plus, Trash2, Info, ChevronDown, CircleCheck, Monitor, Globe, Activity, Wand2 } from 'lucide-react';
 import { Project, WifiModuleConfig, WifiController, WifiZone, WifiApGroup, WifiSsid, AccessPoint, UserRole } from '../types';
 import { IP_REGEX, MAC_REGEX } from '../constants';
 
@@ -46,6 +46,49 @@ const WifiConfiguration: React.FC<WifiConfigurationProps> = ({ project, onUpdate
       (newController as any)[field] = value;
     }
     updateConfig({ controller: newController });
+  };
+
+  const handleBulkGenerate = () => {
+    if (isViewOnly) return;
+    if (!window.confirm("This will generate APs for all rooms based on Floor Plan. Existing APs will be kept. Continue?")) return;
+
+    const newInventory = [...config.inventory];
+    const existingLocs = new Set(newInventory.map(d => d.location));
+    
+    const generate = (room: string) => {
+        if (existingLocs.has(room)) return;
+        newInventory.push({
+            id: `ap-${room}-${Date.now()}`,
+            name: `AP-${room}`,
+            location: room,
+            brand: config.controller.brand || 'Ruckus',
+            mac: '00:00:00:00:00:00',
+            ip: '0.0.0.0',
+            switchPort: '',
+            vlanMgmt: '1',
+            vlanHotspot: '10',
+            channel: 'Auto',
+            user: 'admin',
+            pass: 'admin',
+            notes: '[Type:WIFI]'
+        });
+    };
+
+    if (project.floorPlanConfig && project.floorPlanConfig.totalFloors > 0) {
+        const { totalFloors, roomsPerFloor, startingRoomNumber } = project.floorPlanConfig;
+        for (let f = 0; f < totalFloors; f++) {
+            const floorStart = startingRoomNumber + (f * 100);
+            for (let r = 0; r < roomsPerFloor; r++) {
+                generate((floorStart + r).toString());
+            }
+        }
+    } else {
+        for (let i = 0; i < (project.rooms || 0); i++) {
+            generate((101 + i).toString());
+        }
+    }
+
+    updateConfig({ inventory: newInventory.sort((a,b) => a.location.localeCompare(b.location, undefined, {numeric: true})) });
   };
 
   return (
@@ -284,18 +327,26 @@ const WifiConfiguration: React.FC<WifiConfigurationProps> = ({ project, onUpdate
               <p className="text-slate-500 text-xs font-medium">Physical deployment tracking and port mapping</p>
             </div>
             {!isViewOnly && (
-              <button 
-                onClick={() => {
-                  const newAp: AccessPoint = {
-                    id: Date.now().toString(), name: '', location: '', brand: 'Ruckus', mac: '00:00:00:00:00:00',
-                    ip: '0.0.0.0', switchPort: '', vlanMgmt: '1', vlanHotspot: '10', channel: 'Auto', user: 'super', pass: 'sp-admin'
-                  };
-                  updateConfig({ inventory: [...config.inventory, newAp] });
-                }}
-                className="px-6 py-2 bg-[#87A237] text-white rounded-xl text-xs font-bold shadow-lg shadow-green-100 flex items-center gap-2"
-              >
-                <Plus size={16} /> Add AP Row
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleBulkGenerate}
+                  className="px-6 py-2 bg-white border border-slate-200 text-[#171844] rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-50"
+                >
+                  <Wand2 size={16} /> Bulk Generate from Rooms
+                </button>
+                <button 
+                  onClick={() => {
+                    const newAp: AccessPoint = {
+                      id: Date.now().toString(), name: '', location: '', brand: 'Ruckus', mac: '00:00:00:00:00:00',
+                      ip: '0.0.0.0', switchPort: '', vlanMgmt: '1', vlanHotspot: '10', channel: 'Auto', user: 'super', pass: 'sp-admin'
+                    };
+                    updateConfig({ inventory: [...config.inventory, newAp] });
+                  }}
+                  className="px-6 py-2 bg-[#87A237] text-white rounded-xl text-xs font-bold shadow-lg shadow-green-100 flex items-center gap-2"
+                >
+                  <Plus size={16} /> Add AP Row
+                </button>
+              </div>
             )}
           </div>
 

@@ -60,7 +60,7 @@ const SwitchingPlan: React.FC<SwitchingPlanProps> = ({ project, onUpdate, role }
   const activeSwitch = config.switches.find(s => s.id === activeConfigId);
 
   if (activeConfigId && activeSwitch) {
-    return <SwitchPortConfig switchData={activeSwitch} onBack={() => setActiveConfigId(null)} role={role} />;
+    return <SwitchPortConfig switchData={activeSwitch} onBack={() => setActiveConfigId(null)} role={role} project={project} />;
   }
 
   return (

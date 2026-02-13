@@ -16,23 +16,21 @@ import {
   Terminal,
   Camera
 } from 'lucide-react';
-import { UserRole, SwitchEntry } from '../types';
+import { UserRole, SwitchEntry, Project } from '../types';
 import ConfigGenerator from './ConfigGenerator';
 import BarcodeScanner from './BarcodeScanner';
-
-// VLAN Configuration Registry
-const VLAN_REGISTRY = [
-  { id: 500, name: 'Hotspot', color: 'bg-yellow-400', textColor: 'text-black' },
-  { id: 501, name: 'IPTV', color: 'bg-cyan-400', textColor: 'text-black' },
-  { id: 502, name: 'VoIP', color: 'bg-emerald-400', textColor: 'text-white' },
-  { id: 503, name: 'Management', color: 'bg-purple-500', textColor: 'text-white' },
-  { id: 507, name: 'CCTV', color: 'bg-orange-500', textColor: 'text-white' },
-  { id: 999, name: 'TRUNK', color: 'bg-red-600', textColor: 'text-white' },
-];
 
 const PORT_TYPES = ['Access', 'Trunk'];
 const SNOOP_MODES = ['TRUST', 'UNTRUST'];
 const STP_MODES = ['802-1w admin-pt2pt', 'admin-edge', 'disabled'];
+
+// Default VLANs if none defined in project
+const DEFAULT_VLANS = [
+  { id: 1, name: 'Default', color: 'bg-slate-200', textColor: 'text-black' },
+  { id: 500, name: 'Hotspot', color: 'bg-yellow-400', textColor: 'text-black' },
+  { id: 501, name: 'IPTV', color: 'bg-cyan-400', textColor: 'text-black' },
+  { id: 503, name: 'Management', color: 'bg-purple-500', textColor: 'text-white' },
+];
 
 interface PortConfig {
   id: string;
@@ -47,11 +45,12 @@ interface PortConfig {
 
 interface SwitchPortConfigProps {
   switchData: SwitchEntry;
+  project: Project;
   onBack: () => void;
   role: UserRole;
 }
 
-const SwitchPortConfig: React.FC<SwitchPortConfigProps> = ({ switchData, onBack, role }) => {
+const SwitchPortConfig: React.FC<SwitchPortConfigProps> = ({ switchData, project, onBack, role }) => {
   const isViewOnly = role === UserRole.PROJECT_MANAGER;
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
   
@@ -64,13 +63,38 @@ const SwitchPortConfig: React.FC<SwitchPortConfigProps> = ({ switchData, onBack,
       snoop: 'TRUST',
       stp: '802-1w admin-pt2pt',
       type: 'Access',
-      untaggedVlan: 503,
+      untaggedVlan: 1,
       taggedVlans: []
     }));
   }, []);
 
   const [ports, setPorts] = useState<PortConfig[]>(initialPorts);
   const [selectedPortIds, setSelectedPortIds] = useState<Set<string>>(new Set());
+
+  // Dynamically build VLAN Registry from Project Network Solutions
+  const vlanRegistry = useMemo(() => {
+    if (!project.networkSolutions || !project.networkSolutions.vlans || project.networkSolutions.vlans.length === 0) {
+        return DEFAULT_VLANS;
+    }
+    
+    // Helper to generate consistent colors from strings
+    const getVlanColor = (str: string) => {
+        const hash = str.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+        const colors = [
+            'bg-red-400', 'bg-orange-400', 'bg-amber-400', 'bg-yellow-400', 'bg-lime-400', 
+            'bg-green-400', 'bg-emerald-400', 'bg-teal-400', 'bg-cyan-400', 'bg-sky-400', 
+            'bg-blue-400', 'bg-indigo-400', 'bg-violet-400', 'bg-purple-400', 'bg-fuchsia-400', 'bg-pink-400'
+        ];
+        return colors[Math.abs(hash) % colors.length];
+    };
+
+    return project.networkSolutions.vlans.map(v => ({
+        id: parseInt(v.vlanId) || 0,
+        name: v.name || `VLAN ${v.vlanId}`,
+        color: getVlanColor(v.name),
+        textColor: 'text-black'
+    })).sort((a,b) => a.id - b.id);
+  }, [project.networkSolutions]);
 
   const togglePortSelection = (id: string) => {
     const newSelection = new Set(selectedPortIds);
@@ -92,7 +116,7 @@ const SwitchPortConfig: React.FC<SwitchPortConfigProps> = ({ switchData, onBack,
   };
 
   const getVlanStyles = (vlanId: number) => {
-    return VLAN_REGISTRY.find(v => v.id === vlanId) || { color: 'bg-slate-200', textColor: 'text-slate-400' };
+    return vlanRegistry.find(v => v.id === vlanId) || { color: 'bg-slate-200', textColor: 'text-slate-400' };
   };
 
   return (
@@ -118,18 +142,21 @@ const SwitchPortConfig: React.FC<SwitchPortConfigProps> = ({ switchData, onBack,
 
         <div className="bg-white rounded-[2rem] border border-slate-200 p-6 shadow-sm">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <LayoutGrid size={14} /> VLAN Legend
+            <LayoutGrid size={14} /> Active VLANs
           </h3>
-          <div className="space-y-2">
-            {VLAN_REGISTRY.map(vlan => (
+          <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-hide">
+            {vlanRegistry.map(vlan => (
               <div key={vlan.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors">
                 <div className={`w-8 h-8 rounded-lg ${vlan.color} shadow-sm shrink-0`} />
-                <div>
-                  <p className="text-xs font-bold text-[#171844]">{vlan.name}</p>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-[#171844] truncate">{vlan.name}</p>
                   <p className="text-[9px] font-black text-slate-400 uppercase">ID: {vlan.id}</p>
                 </div>
               </div>
             ))}
+            {vlanRegistry.length === 0 && (
+                <p className="text-[10px] text-slate-400 italic text-center py-4">No VLANs defined in Network Solutions module.</p>
+            )}
           </div>
         </div>
 
@@ -177,9 +204,9 @@ const SwitchPortConfig: React.FC<SwitchPortConfigProps> = ({ switchData, onBack,
             </div>
           </div>
 
-          <div className="flex gap-8">
+          <div className="flex gap-8 overflow-x-auto pb-4 scrollbar-hide">
             {/* 48 Copper Ports (2 rows of 24) */}
-            <div className="grid grid-cols-24 gap-1.5 flex-1">
+            <div className="grid grid-cols-24 gap-1.5 flex-1 min-w-[800px]">
               {ports.slice(0, 48).map((port) => {
                 const isSelected = selectedPortIds.has(port.id);
                 const vlanStyle = getVlanStyles(port.untaggedVlan);
@@ -192,6 +219,7 @@ const SwitchPortConfig: React.FC<SwitchPortConfigProps> = ({ switchData, onBack,
                         ? 'border-[#0070C0] scale-110 z-10 shadow-[0_0_15px_rgba(0,112,192,0.4)]' 
                         : 'border-slate-700 hover:border-slate-500'
                     } ${vlanStyle.color}`}
+                    title={`Port ${port.label} - VLAN ${port.untaggedVlan}`}
                   >
                     <div className="absolute inset-0 bg-black/10 rounded-sm pointer-events-none" />
                     <span className={`text-[8px] font-black ${vlanStyle.textColor} absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity`}>
@@ -250,11 +278,11 @@ const SwitchPortConfig: React.FC<SwitchPortConfigProps> = ({ switchData, onBack,
 
                   <div className="flex gap-3 flex-1 overflow-hidden">
                      <select 
-                        className="bg-white/20 border-none rounded-lg px-3 py-1 text-[10px] font-bold focus:ring-0 outline-none w-full"
+                        className="bg-white/20 border-none rounded-lg px-3 py-1 text-[10px] font-bold focus:ring-0 outline-none w-full text-white"
                         onChange={(e) => applyBulkUpdate({ untaggedVlan: parseInt(e.target.value) })}
                       >
-                        <option value="">Set VLAN...</option>
-                        {VLAN_REGISTRY.map(v => <option key={v.id} value={v.id} className="text-black">{v.id} - {v.name}</option>)}
+                        <option value="" className="text-black">Set VLAN...</option>
+                        {vlanRegistry.map(v => <option key={v.id} value={v.id} className="text-black">{v.id} - {v.name}</option>)}
                       </select>
                   </div>
 
@@ -370,7 +398,7 @@ const SwitchPortConfig: React.FC<SwitchPortConfigProps> = ({ switchData, onBack,
                               setPorts(newPorts);
                             }}
                           >
-                            {VLAN_REGISTRY.map(v => <option key={v.id} value={v.id}>{v.id} - {v.name}</option>)}
+                            {vlanRegistry.map(v => <option key={v.id} value={v.id}>{v.id} - {v.name}</option>)}
                           </select>
                         </div>
                       </td>

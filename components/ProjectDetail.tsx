@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, Info, FileText, LayoutGrid, Eye, CircleUser, Globe, Users, Briefcase, FileCheck, Tag, PackageX, Mail, Phone, ExternalLink, Hotel, UserCog, Building2, Github, GitBranch, GitCommit, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Info, FileText, LayoutGrid, Eye, CircleUser, Globe, Users, Briefcase, FileCheck, Tag, PackageX, Mail, Phone, ExternalLink, Hotel, UserCog, Building2, Github, GitBranch, GitCommit, RefreshCw, Layers, UploadCloud } from 'lucide-react';
 import { IP_REGEX } from '../constants';
-import { ModuleType, UserRole, ProjectDocument, Device, Project, TvModuleConfig } from '../types';
+import { ModuleType, UserRole, ProjectDocument, Device, Project, TvModuleConfig, DocumentCategory } from '../types';
 import DocumentManager from './DocumentManager';
 import NetworkVisualizer from './NetworkVisualizer';
 import TvConfiguration from './TvConfiguration';
@@ -30,6 +30,7 @@ const ProjectDetail: React.FC<{ role: UserRole }> = ({ role }) => {
   const project = projects.find(p => p.id === id);
   const [activeTab, setActiveTab] = useState<string>('Overview');
   const [isSyncing, setIsSyncing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isViewOnly = role === UserRole.PROJECT_MANAGER;
 
@@ -65,8 +66,25 @@ const ProjectDetail: React.FC<{ role: UserRole }> = ({ role }) => {
     }, 2000);
   };
 
+  const handleUploadFloorPlan = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const newDoc: ProjectDocument = {
+        id: `doc-${Date.now()}`,
+        name: file.name,
+        mimeType: file.type,
+        category: DocumentCategory.FLOOR_PLAN,
+        size: file.size,
+        uploadDate: new Date().toISOString(),
+        uploadedBy: 'Admin',
+        storageUrl: '#'
+      };
+      handleSave({ documents: [...project.documents, newDoc] });
+    }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto pb-20 px-4 md:px-0">
+    <div className="max-w-7xl mx-auto pb-24 px-4 md:px-0">
       {/* Detail Header */}
       <div className="mb-6 md:mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4 md:gap-6">
@@ -84,7 +102,7 @@ const ProjectDetail: React.FC<{ role: UserRole }> = ({ role }) => {
       </div>
 
       {/* Tabs - Scrollable on mobile */}
-      <div className="flex gap-2 overflow-x-auto pb-4 md:pb-6 scrollbar-hide mb-6 md:mb-10 sticky top-20 bg-[#E9F2F8]/95 backdrop-blur-md z-30 pt-2">
+      <div className="flex gap-2 overflow-x-auto pb-4 md:pb-6 scrollbar-hide mb-6 md:mb-10 sticky top-20 bg-[#E9F2F8]/95 backdrop-blur-md z-30 pt-2 -mx-4 px-4 md:mx-0 md:px-0">
         {tabs.map(tab => (
           <button
             key={tab}
@@ -142,6 +160,61 @@ const ProjectDetail: React.FC<{ role: UserRole }> = ({ role }) => {
                       <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Official Address</label>
                       <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" value={project.address} onChange={e => handleSave({ address: e.target.value })} disabled={isViewOnly} />
                     </div>
+                  </div>
+                  
+                  {/* Floor Plan Config Section */}
+                  <div className="pt-6 border-t border-slate-100 space-y-6">
+                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                       <h4 className="text-lg font-bold flex items-center gap-2 text-[#171844]">
+                         <Layers size={20} className="text-[#87A237]" /> Floor Plan Config
+                       </h4>
+                       <div className="flex items-center gap-2">
+                          <input type="file" ref={fileInputRef} className="hidden" accept="image/*,application/pdf" onChange={handleUploadFloorPlan} />
+                          <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-[#171844] rounded-xl text-[10px] font-bold uppercase hover:bg-slate-200 transition-all">
+                             <UploadCloud size={14} /> Upload Map
+                          </button>
+                       </div>
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-1">
+                           <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Total Floors</label>
+                           <input 
+                             type="number"
+                             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm"
+                             value={project.floorPlanConfig?.totalFloors || 1}
+                             onChange={e => handleSave({ floorPlanConfig: { ...project.floorPlanConfig!, totalFloors: parseInt(e.target.value) } })}
+                           />
+                        </div>
+                        <div className="space-y-1">
+                           <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Rooms Per Floor</label>
+                           <input 
+                             type="number"
+                             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm"
+                             value={project.floorPlanConfig?.roomsPerFloor || 0}
+                             onChange={e => handleSave({ floorPlanConfig: { ...project.floorPlanConfig!, roomsPerFloor: parseInt(e.target.value) } })}
+                           />
+                        </div>
+                        <div className="space-y-1">
+                           <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Start Room #</label>
+                           <input 
+                             type="number"
+                             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-sm"
+                             value={project.floorPlanConfig?.startingRoomNumber || 101}
+                             onChange={e => handleSave({ floorPlanConfig: { ...project.floorPlanConfig!, startingRoomNumber: parseInt(e.target.value) } })}
+                           />
+                        </div>
+                     </div>
+                     
+                     {project.documents.filter(d => d.category === DocumentCategory.FLOOR_PLAN).length > 0 && (
+                        <div className="grid grid-cols-2 gap-4">
+                           {project.documents.filter(d => d.category === DocumentCategory.FLOOR_PLAN).map(doc => (
+                              <div key={doc.id} className="p-3 border border-slate-200 rounded-xl flex items-center gap-3 bg-slate-50">
+                                 <FileText className="text-[#0070C0]" size={16} />
+                                 <span className="text-xs font-bold text-[#171844] truncate flex-1">{doc.name}</span>
+                              </div>
+                           ))}
+                        </div>
+                     )}
                   </div>
                </div>
 
@@ -239,6 +312,7 @@ const ProjectDetail: React.FC<{ role: UserRole }> = ({ role }) => {
         </div>
       </div>
       
+      {/* Ensure chat is visible at the bottom of the project page */}
       <ProjectChat />
     </div>
   );

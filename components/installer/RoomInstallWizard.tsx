@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Device, Project, ModuleType, AccessPoint } from '../../types';
 import { useProjects } from '../../contexts/ProjectContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { X, Tv, Wifi, Smartphone, MonitorPlay, Share2, CheckCircle2, AlertTriangle, Save, Camera, ChevronDown, ChevronUp, AlertCircle, ListChecks, ArrowRight, Ban, ZapOff, MonitorOff, Phone, Plus, Globe } from 'lucide-react';
+import { X, Tv, Wifi, Smartphone, MonitorPlay, Share2, CheckCircle2, AlertTriangle, Save, Camera, ChevronDown, ChevronUp, AlertCircle, ListChecks, ArrowRight, Ban, ZapOff, MonitorOff, Phone, Plus, Globe, MoreHorizontal } from 'lucide-react';
 import BarcodeScanner from '../BarcodeScanner';
 
 interface RoomSummary {
@@ -35,26 +35,25 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
     
     const newDevices: Device[] = [];
     
-    // Auto-add devices based on active modules
+    // Auto-add devices based on active modules if empty
     if (project.selectedModules.includes(ModuleType.TV)) {
         newDevices.push({ id: `new-tv-${Date.now()}`, name: 'Room TV', brand: 'Samsung', model: 'HG Series', macAddress: '', serialNumber: '', room: roomData.room, installed: false, ipAddress: '', notes: '[Type:TV]' });
     }
     
     if (project.selectedModules.includes(ModuleType.INTERNET)) {
-        // Assume 1 AP per room if Internet module is active (as per requirements)
         newDevices.push({ id: `new-ap-${Date.now()}`, name: 'Access Point', brand: 'Ruckus', model: 'H550', macAddress: '', serialNumber: '', room: roomData.room, installed: false, ipAddress: '', notes: '[Type:WIFI]' });
     }
     
     if (project.selectedModules.includes(ModuleType.CAST)) {
-        newDevices.push({ id: `new-cast-${Date.now()}`, name: 'Nonius Cast (Dongle)', brand: 'Nonius', model: 'Homatics', macAddress: '', serialNumber: '', room: roomData.room, installed: false, ipAddress: '', notes: '[Type:CAST]' });
+        newDevices.push({ id: `new-cast-${Date.now()}`, name: 'Nonius Cast', brand: 'Nonius', model: 'Homatics', macAddress: '', serialNumber: '', room: roomData.room, installed: false, ipAddress: '', notes: '[Type:CAST]' });
     }
 
     if (project.selectedModules.includes(ModuleType.VOICE)) {
-        newDevices.push({ id: `new-phone-${Date.now()}`, name: 'Nonius Voice (Phone)', brand: 'Mitel', model: '6920', macAddress: '', serialNumber: '', room: roomData.room, installed: false, ipAddress: '', notes: '[Type:VOICE]' });
+        newDevices.push({ id: `new-phone-${Date.now()}`, name: 'IP Phone', brand: 'Mitel', model: '6920', macAddress: '', serialNumber: '', room: roomData.room, installed: false, ipAddress: '', notes: '[Type:VOICE]' });
     }
 
     if (project.selectedModules.includes(ModuleType.WEBAPP)) {
-        newDevices.push({ id: `new-webapp-${Date.now()}`, name: 'Guest Webapp Test', brand: 'Virtual', model: 'Web Portal', macAddress: 'N/A', serialNumber: 'N/A', room: roomData.room, installed: false, ipAddress: 'N/A', notes: '[Type:WEBAPP]' });
+        newDevices.push({ id: `new-webapp-${Date.now()}`, name: 'Guest Webapp', brand: 'Virtual', model: 'Portal', macAddress: 'N/A', serialNumber: 'N/A', room: roomData.room, installed: false, ipAddress: 'N/A', notes: '[Type:WEBAPP]' });
     }
 
     return newDevices;
@@ -105,7 +104,7 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
       if (type === 'TV') newDev = { ...base, name: 'Additional TV', brand: 'Samsung', model: 'HG Series' };
       else if (type === 'WIFI') newDev = { ...base, name: 'Additional AP', brand: 'Ruckus', model: 'H550' };
       else if (type === 'VOICE') newDev = { ...base, name: 'Additional Phone', brand: 'Mitel', model: '6920' };
-      else newDev = { ...base, name: 'Generic Device', brand: 'Generic', model: 'Generic' };
+      else newDev = { ...base, name: 'Other Device', brand: 'Generic', model: 'Hardware' };
 
       setDevices([...devices, newDev]);
   };
@@ -161,24 +160,18 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
           installedAt: new Date().toISOString()
       };
 
-      // --- SYNC TO TV INVENTORY ---
-      // Webapp checks are stored in TV inventory for now if no dedicated place, or just tracked in notes
-      if (localDev.notes?.includes('Type:TV') || localDev.name.includes('TV') || localDev.notes?.includes('Type:WEBAPP')) {
+      // --- SYNC TO MODULES OR GENERIC TV INVENTORY ---
+      if (localDev.notes?.includes('Type:TV') || localDev.name.includes('TV') || localDev.notes?.includes('Type:WEBAPP') || localDev.notes?.includes('Type:OTHER')) {
         if (newTvConfig) {
-            // Check if device already exists in inventory by ID
             const idx = newTvConfig.inventory.findIndex(d => d.id === localDev.id);
-            const tvPayload: Device = {
-                ...localDev,
-                ...commonFields
-            };
+            const tvPayload: Device = { ...localDev, ...commonFields };
 
             if (idx > -1) {
                 newTvConfig.inventory[idx] = tvPayload;
             } else {
-                // If it was a 'new-tv' ID generated locally, check if there is a placeholder for this room that is uninstalled
+                // Handle uninitialized placeholder replacement
                 const placeholderIdx = newTvConfig.inventory.findIndex(d => d.room === localDev.room && !d.installed && (d.notes?.includes(localDev.notes?.includes('WEBAPP') ? 'WEBAPP' : 'TV') || true));
                 if (placeholderIdx > -1 && localDev.id.startsWith('new-')) {
-                     // Overwrite the placeholder
                      newTvConfig.inventory[placeholderIdx] = { ...tvPayload, id: newTvConfig.inventory[placeholderIdx].id };
                 } else {
                      newTvConfig.inventory.push(tvPayload);
@@ -191,7 +184,6 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
       if (localDev.notes?.includes('Type:WIFI') || localDev.name.includes('Access Point')) {
         if (newWifiConfig) {
            const idx = newWifiConfig.inventory.findIndex(d => d.id === localDev.id);
-           
            const apPayload: AccessPoint = {
                id: idx > -1 ? newWifiConfig.inventory[idx].id : localDev.id,
                name: localDev.name, 
@@ -235,7 +227,6 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
               signal: '-65', 
               notes: finalNotes
           };
-          
           if (idx > -1) newCastConfig.dongleInventory.roomRows[idx] = castPayload as any;
           else newCastConfig.dongleInventory.roomRows.push(castPayload as any);
         }
@@ -244,10 +235,7 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
       // --- SYNC TO VOICE INVENTORY ---
       if (localDev.notes?.includes('Type:VOICE') || localDev.name.includes('Phone')) {
           const idx = newVoiceConfig.inventory.findIndex((d: Device) => d.id === localDev.id);
-          const voicePayload: Device = {
-              ...localDev,
-              ...commonFields
-          };
+          const voicePayload: Device = { ...localDev, ...commonFields };
 
           if (idx > -1) {
               newVoiceConfig.inventory[idx] = voicePayload;
@@ -306,6 +294,7 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
       if (type === 'CAST') return devices.filter(d => d.name.includes('Cast') || d.name.includes('Dongle') || d.notes?.includes('Type:CAST'));
       if (type === 'VOICE') return devices.filter(d => d.name.includes('Phone') || d.notes?.includes('Type:VOICE'));
       if (type === 'WEBAPP') return devices.filter(d => d.notes?.includes('Type:WEBAPP'));
+      if (type === 'OTHER') return devices.filter(d => d.notes?.includes('Type:OTHER'));
       return [];
   };
 
@@ -408,23 +397,25 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
                     )}
 
                     {/* QA Checklist */}
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <div className="flex items-center gap-2 mb-3 text-slate-500">
-                           <ListChecks size={14} />
-                           <span className="text-[10px] font-bold uppercase tracking-widest">QA Verification</span>
-                        </div>
-                        <div className="grid grid-cols-1 gap-2">
-                           {checklist.map(item => (
-                             <label key={item} className="flex items-center gap-3 cursor-pointer group">
-                                <div className="relative flex items-center">
-                                  <input type="checkbox" className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-slate-300 transition-all checked:border-[#0070C0] checked:bg-[#0070C0]" />
-                                  <CheckCircle2 size={14} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" />
-                                </div>
-                                <span className="text-xs font-medium text-slate-600 group-hover:text-[#171844] transition-colors">{item}</span>
-                             </label>
-                           ))}
-                        </div>
-                    </div>
+                    {checklist.length > 0 && (
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                          <div className="flex items-center gap-2 mb-3 text-slate-500">
+                            <ListChecks size={14} />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">QA Verification</span>
+                          </div>
+                          <div className="grid grid-cols-1 gap-2">
+                            {checklist.map(item => (
+                              <label key={item} className="flex items-center gap-3 cursor-pointer group">
+                                  <div className="relative flex items-center">
+                                    <input type="checkbox" className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-slate-300 transition-all checked:border-[#0070C0] checked:bg-[#0070C0]" />
+                                    <CheckCircle2 size={14} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" />
+                                  </div>
+                                  <span className="text-xs font-medium text-slate-600 group-hover:text-[#171844] transition-colors">{item}</span>
+                              </label>
+                            ))}
+                          </div>
+                      </div>
+                    )}
 
                     {/* Multi-Issue Reporting */}
                     <div>
@@ -571,6 +562,9 @@ const RoomInstallWizard: React.FC<RoomInstallWizardProps> = ({ project, roomData
         {project.selectedModules.includes(ModuleType.WEBAPP) && 
             renderDeviceSection('Guest Webapp', 'WEBAPP', <Globe size={20} />, 'bg-pink-100 text-pink-600',
             ['QR Code Scans Correctly', 'Redirects to Correct URL', 'Landing Page Loads < 3s', 'Welcome Message Correct'])}
+
+        {/* Generic Other Section */}
+        {renderDeviceSection('Other Equipment', 'OTHER', <MoreHorizontal size={20} />, 'bg-slate-100 text-slate-600', [])}
 
       </div>
 

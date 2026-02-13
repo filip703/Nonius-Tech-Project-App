@@ -89,16 +89,29 @@ const InstallerDashboard: React.FC = () => {
     // Webapp is usually virtual, but we track it as a "device" for completion status in rooms
     if (project.selectedModules.includes(ModuleType.WEBAPP)) {
         // We look for pseudo-devices stored in TV or generic inventory tagged as Webapp
-        // Or we just rely on the room install wizard to create them. 
-        // For existing data, we might not have them yet, but we will process them if found.
     }
 
-    const definedRoomCount = project.rooms || 0;
-    
-    for (let i = 0; i < definedRoomCount; i++) {
-        const roomNum = (101 + i).toString();
-        if (!roomMap.has(roomNum)) {
-            roomMap.set(roomNum, []);
+    // --- Smart Room Generation ---
+    if (project.floorPlanConfig && project.floorPlanConfig.totalFloors > 0 && project.floorPlanConfig.roomsPerFloor > 0) {
+        const { totalFloors, roomsPerFloor, startingRoomNumber } = project.floorPlanConfig;
+        
+        for (let f = 0; f < totalFloors; f++) {
+            const floorStart = startingRoomNumber + (f * 100); // e.g., 101, 201, 301
+            for (let r = 0; r < roomsPerFloor; r++) {
+                const roomNum = (floorStart + r).toString();
+                if (!roomMap.has(roomNum)) {
+                    roomMap.set(roomNum, []);
+                }
+            }
+        }
+    } else {
+        // Fallback to simple linear generation if no config
+        const definedRoomCount = project.rooms || 0;
+        for (let i = 0; i < definedRoomCount; i++) {
+            const roomNum = (101 + i).toString();
+            if (!roomMap.has(roomNum)) {
+                roomMap.set(roomNum, []);
+            }
         }
     }
 
