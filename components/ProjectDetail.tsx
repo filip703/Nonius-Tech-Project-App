@@ -19,6 +19,7 @@ import PhotoDocumentation from './PhotoDocumentation';
 import HandoverManager from './HandoverManager';
 import LabelGenerator from './LabelGenerator';
 import RmaManager from './RmaManager';
+import ProjectChat from './ProjectChat';
 import { useProjects } from '../contexts/ProjectContext';
 
 const ProjectDetail: React.FC<{ role: UserRole }> = ({ role }) => {
@@ -237,6 +238,8 @@ const ProjectDetail: React.FC<{ role: UserRole }> = ({ role }) => {
           </div>
         </div>
       </div>
+      
+      <ProjectChat />
     </div>
   );
 };

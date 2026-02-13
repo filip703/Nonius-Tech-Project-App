@@ -6,6 +6,7 @@ import { Device, ModuleType, ProjectContact } from '../../types';
 import { Filter, CheckCircle2, AlertCircle, Clock, MapPin, Search, ArrowLeft, MoreVertical, LogOut, LayoutGrid, CheckSquare, AlertTriangle, Ban, Server, Phone, Tv, Wifi, Share2, Mail, User, ChevronUp, ChevronDown } from 'lucide-react';
 import RoomInstallWizard from './RoomInstallWizard';
 import RackInstallWizard from './RackInstallWizard';
+import ProjectChat from '../ProjectChat';
 
 interface RoomSummary {
   room: string;
@@ -18,8 +19,13 @@ interface RoomSummary {
 
 const InstallerDashboard: React.FC = () => {
   const { id } = useParams();
-  const { projects, currentUser } = useProjects();
+  const { projects, currentUser, setActiveProject } = useProjects();
   const project = projects.find(p => p.id === id);
+  
+  // Ensure the context knows which project is active for the chat component to work
+  React.useEffect(() => {
+    if (project) setActiveProject(project);
+  }, [project, setActiveProject]);
   
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [filterFloor, setFilterFloor] = useState<string>('All');
@@ -213,6 +219,7 @@ const InstallerDashboard: React.FC = () => {
       {/* Dynamic Wizard Loader */}
       {selectedRoom && selectedRoom.type === 'INFRA' && selectedRoom.rackId ? (
          <RackInstallWizard 
+            key={selectedRoom.room}
             project={project}
             rackId={selectedRoom.rackId}
             rackName={selectedRoom.room}
@@ -220,6 +227,7 @@ const InstallerDashboard: React.FC = () => {
          />
       ) : selectedRoom && (
         <RoomInstallWizard 
+          key={selectedRoom.room}
           project={project} 
           roomData={selectedRoom}
           allRooms={filteredRooms.filter(r => r.type === 'GUEST')} // Only nav through guest rooms
@@ -435,6 +443,8 @@ const InstallerDashboard: React.FC = () => {
           );
         })}
       </div>
+
+      <ProjectChat />
     </div>
   );
 };

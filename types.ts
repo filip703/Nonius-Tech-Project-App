@@ -49,6 +49,15 @@ export interface ProjectContact {
   role: 'Nonius' | 'Client' | 'Third-Party';
 }
 
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  role: string;
+  text: string;
+  timestamp: string;
+}
+
 export enum ModuleType {
   TV = 'NTV+',
   CAST = 'Nonius Cast',
@@ -469,6 +478,7 @@ export interface Project {
   networkSolutions?: { services: ServiceAudit[], vlans: VlanConfig[] };
   switchingPlan?: { switches: SwitchEntry[] };
   documents: ProjectDocument[];
+  chatMessages?: ChatMessage[];
   handoverSignedAt?: string;
   handoverSignedBy?: string;
   isLocked?: boolean;
