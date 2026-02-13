@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProjects } from '../../contexts/ProjectContext';
 import { Device, ModuleType, ProjectContact } from '../../types';
-import { Filter, CheckCircle2, AlertCircle, Clock, MapPin, Search, ArrowLeft, MoreVertical, LogOut, LayoutGrid, CheckSquare, AlertTriangle, Ban, Server, Phone, Tv, Wifi, Share2, Mail, User } from 'lucide-react';
+import { Filter, CheckCircle2, AlertCircle, Clock, MapPin, Search, ArrowLeft, MoreVertical, LogOut, LayoutGrid, CheckSquare, AlertTriangle, Ban, Server, Phone, Tv, Wifi, Share2, Mail, User, ChevronUp, ChevronDown } from 'lucide-react';
 import RoomInstallWizard from './RoomInstallWizard';
 import RackInstallWizard from './RackInstallWizard';
 
@@ -24,6 +24,7 @@ const InstallerDashboard: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [filterFloor, setFilterFloor] = useState<string>('All');
   const [selectedRoom, setSelectedRoom] = useState<RoomSummary | null>(null);
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
 
   // --- Data Aggregation Logic ---
   const roomsData = useMemo(() => {
@@ -228,7 +229,7 @@ const InstallerDashboard: React.FC = () => {
       )}
 
       {/* Header */}
-      <header className="bg-[#171844] text-white p-6 rounded-b-[2.5rem] shadow-xl sticky top-0 z-20">
+      <header className="bg-[#171844] text-white p-6 rounded-b-[2.5rem] shadow-xl sticky top-0 z-20 transition-all duration-300">
         <div className="flex items-center justify-between mb-2">
           <Link to="/installer" className="p-2 bg-white/10 rounded-xl hover:bg-white/20 active:scale-95 transition-all">
             <LogOut size={20} />
@@ -241,83 +242,89 @@ const InstallerDashboard: React.FC = () => {
                 <span>Tech: {currentUser.name}</span>
              </div>
           </div>
-          <button className="p-2 bg-white/10 rounded-xl opacity-0"> 
-            <MoreVertical size={20} />
+          <button 
+            onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
+            className="p-2 bg-white/10 rounded-xl hover:bg-white/20 active:scale-95 transition-all text-slate-300"
+          > 
+            {isHeaderExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </button>
         </div>
 
-        {/* Compact Key Contacts Row */}
-        <div className="flex gap-2 mb-4 bg-white/5 p-2 rounded-xl border border-white/5 overflow-x-auto scrollbar-hide">
-            {[
-                { role: 'PM', ...pm }, 
-                { role: 'LEAD', ...techLead }, 
-                { role: 'IT', ...it }
-            ].map((c, i) => (
-                <div key={i} className="flex-1 min-w-[100px] flex flex-col justify-center px-3 border-r border-white/10 last:border-0">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{c.role}</p>
-                    <p className="text-[10px] font-bold text-white truncate">{c.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                        {c.mobile && (
-                            <a href={`tel:${c.mobile}`} className="text-slate-400 hover:text-[#87A237]" title={c.mobile}>
-                                <Phone size={10} />
-                            </a>
-                        )}
-                        {c.email && (
-                            <a href={`mailto:${c.email}`} className="text-slate-400 hover:text-[#87A237]" title={c.email}>
-                                <Mail size={10} />
-                            </a>
-                        )}
+        {/* Collapsible Section */}
+        <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isHeaderExpanded ? 'max-h-[500px] opacity-100 mt-4' : 'max-h-0 opacity-0 mt-0'}`}>
+            {/* Compact Key Contacts Row */}
+            <div className="flex gap-2 mb-4 bg-white/5 p-2 rounded-xl border border-white/5 overflow-x-auto scrollbar-hide">
+                {[
+                    { role: 'PM', ...pm }, 
+                    { role: 'LEAD', ...techLead }, 
+                    { role: 'IT', ...it }
+                ].map((c, i) => (
+                    <div key={i} className="flex-1 min-w-[100px] flex flex-col justify-center px-3 border-r border-white/10 last:border-0">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{c.role}</p>
+                        <p className="text-[10px] font-bold text-white truncate">{c.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                            {c.mobile && (
+                                <a href={`tel:${c.mobile}`} className="text-slate-400 hover:text-[#87A237]" title={c.mobile}>
+                                    <Phone size={10} />
+                                </a>
+                            )}
+                            {c.email && (
+                                <a href={`mailto:${c.email}`} className="text-slate-400 hover:text-[#87A237]" title={c.email}>
+                                    <Mail size={10} />
+                                </a>
+                            )}
+                        </div>
                     </div>
+                ))}
+            </div>
+
+            {/* Enhanced Progress Bar */}
+            <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/5 space-y-4">
+            <div>
+                <div className="flex justify-between items-end mb-2">
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">Overall Completion</span>
+                    <span className="text-2xl font-black text-[#87A237]">{Math.round((stats.completed / stats.total) * 100)}%</span>
                 </div>
-            ))}
-        </div>
+                <div className="h-3 bg-black/30 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#87A237] transition-all duration-1000" style={{ width: `${(stats.completed / stats.total) * 100}%` }} />
+                </div>
+                <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
+                    <span>{stats.completed} Rooms Done</span>
+                    <span>{stats.total} Total</span>
+                </div>
+            </div>
 
-        {/* Enhanced Progress Bar */}
-        <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/5 space-y-4">
-           <div>
-               <div className="flex justify-between items-end mb-2">
-                  <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">Overall Completion</span>
-                  <span className="text-2xl font-black text-[#87A237]">{Math.round((stats.completed / stats.total) * 100)}%</span>
-               </div>
-               <div className="h-3 bg-black/30 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#87A237] transition-all duration-1000" style={{ width: `${(stats.completed / stats.total) * 100}%` }} />
-               </div>
-               <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
-                  <span>{stats.completed} Rooms Done</span>
-                  <span>{stats.total} Total</span>
-               </div>
-           </div>
+            {/* Module Breakdown Bars */}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
+                {Object.entries(stats.moduleBreakdown).map(([mod, data]) => {
+                    if (data.total === 0) return null;
+                    const pct = Math.round((data.done / data.total) * 100);
+                    let color = 'bg-slate-400';
+                    let icon = null;
+                    if (mod === 'TV') { color = 'bg-blue-500'; icon = <Tv size={10} />; }
+                    if (mod === 'WIFI') { color = 'bg-amber-500'; icon = <Wifi size={10} />; }
+                    if (mod === 'CAST') { color = 'bg-emerald-500'; icon = <Share2 size={10} />; }
+                    if (mod === 'VOICE') { color = 'bg-purple-500'; icon = <Phone size={10} />; }
 
-           {/* Module Breakdown Bars */}
-           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
-              {Object.entries(stats.moduleBreakdown).map(([mod, data]) => {
-                  if (data.total === 0) return null;
-                  const pct = Math.round((data.done / data.total) * 100);
-                  let color = 'bg-slate-400';
-                  let icon = null;
-                  if (mod === 'TV') { color = 'bg-blue-500'; icon = <Tv size={10} />; }
-                  if (mod === 'WIFI') { color = 'bg-amber-500'; icon = <Wifi size={10} />; }
-                  if (mod === 'CAST') { color = 'bg-emerald-500'; icon = <Share2 size={10} />; }
-                  if (mod === 'VOICE') { color = 'bg-purple-500'; icon = <Phone size={10} />; }
-
-                  return (
-                      <div key={mod} className="bg-black/20 p-2 rounded-lg">
-                          <div className="flex justify-between text-[9px] font-bold text-slate-300 mb-1">
-                              <span className="flex items-center gap-1">{icon} {mod}</span>
-                              <span>{pct}%</span>
-                          </div>
-                          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                              <div className={`h-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
-                          </div>
-                      </div>
-                  );
-              })}
-           </div>
+                    return (
+                        <div key={mod} className="bg-black/20 p-2 rounded-lg">
+                            <div className="flex justify-between text-[9px] font-bold text-slate-300 mb-1">
+                                <span className="flex items-center gap-1">{icon} {mod}</span>
+                                <span>{pct}%</span>
+                            </div>
+                            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div className={`h-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+            </div>
         </div>
       </header>
 
       {/* Filters */}
-      <div className="px-6 py-6 overflow-x-auto whitespace-nowrap scrollbar-hide flex gap-3 sticky top-[240px] z-10 bg-[#F3F4F6]/95 backdrop-blur-sm">
+      <div className={`px-6 py-6 overflow-x-auto whitespace-nowrap scrollbar-hide flex gap-3 sticky z-10 bg-[#F3F4F6]/95 backdrop-blur-sm transition-all duration-300 ${isHeaderExpanded ? 'top-[400px]' : 'top-[90px]'}`}>
          <button 
            onClick={() => setFilterStatus('All')} 
            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${filterStatus === 'All' ? 'bg-[#171844] text-white' : 'bg-white text-slate-500'}`}
